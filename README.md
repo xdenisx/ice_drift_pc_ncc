@@ -7,8 +7,12 @@ cc_bm_parallel_pyr_dev.py
 cmd arguments:
 "filename1 filename2 block_size search_area grid_step"
 
-Example of usage in IPython: run cc_bm_parallel_pyr_dev.py ./data/ASA_WSM__20071225T022840_0761_g.tif ./data/ASA_WSM__20071226T115239_7547_g.tif 64 4 100
- 
+Example of usage in IPython: 
+
+```
+run cc_bm_parallel_pyr_dev.py ./data/ASA_WSM__20071225T022840_0761_g.tif ./data/ASA_WSM__20071226T115239_7547_g.tif 64 4 100
+```
+
 1.1 Config file
 cc_config.py
 
