@@ -1,6 +1,8 @@
 # ice_drift_pc_ncc
 Ice drift retrieval algorithm based on combination of normilized cross-correlation and phase correlation
 
+Programmed by: Denis Demchev, Petr Korobov, Vlad Alekseev, Anton Volkov
+
 1. The main script:
 cc_bm_parallel_pyr_dev.py
 
