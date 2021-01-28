@@ -242,61 +242,61 @@ class CalcDrift(object):
 				im2 = filters.scharr(im2)
 
 			# Check for black stripes
-			flag1 = self.check_borders(im1)
-			flag2 = self.check_borders(im2)
+			#flag1 = self.check_borders(im1)
+			#flag2 = self.check_borders(im2)
 
 			# No black borders in the first image
-			if flag1 == 0: # and flag2 == 0:
-				u_direct, v_direct, result = self.matching(im1, im2)
-				# Peak maximum CC
-				cc_max = np.max(result)
+			#if flag1 == 0 and flag2 == 0:
+			u_direct, v_direct, result = self.matching(im1, im2)
+			# Peak maximum CC
+			cc_max = np.max(result)
 
-				# Get coordinates with offsets
-				lline_2, rrow_2 = v_direct + Li0, u_direct +  Li1
-				lline_1, rrow_1 = iidx_line, iidx_row
+			# Get coordinates with offsets
+			lline_2, rrow_2 = v_direct + Li0, u_direct +  Li1
+			lline_1, rrow_1 = iidx_line, iidx_row
 
-				#ff_out_txt.write('%s, %s, %s, %s, %s, %s, %s, %s' %
-				#                 (lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1))
-				print(lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
+			#ff_out_txt.write('%s, %s, %s, %s, %s, %s, %s, %s' %
+			#                 (lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1))
+			print(lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
 
-				#print('\nCOORDS: %s %s' % (arr_lines_1[i, j], arr_rows_1[i, j]))
-				#print('COORDS: %s %s\n' % (arr_lines_2[i, j], arr_rows_2[i, j]))
+			#print('\nCOORDS: %s %s' % (arr_lines_1[i, j], arr_rows_1[i, j]))
+			#print('COORDS: %s %s\n' % (arr_lines_2[i, j], arr_rows_2[i, j]))
 
-				# Peaks plot
-				if plot_correlation_peaks:
-					plot_peaks(im1, im2, u_direct, v_direct, iidx_line, iidx_row, result, pref,
-							lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
-					#plot_peaks(im1_bm, im2_bm, uu_bm, vv_bm, iidx_line, iidx_row,
-					#           result_bm, 'bm')
+			# Peaks plot
+			if plot_correlation_peaks:
+				plot_peaks(im1, im2, u_direct, v_direct, iidx_line, iidx_row, result, pref,
+						lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
+				#plot_peaks(im1_bm, im2_bm, uu_bm, vv_bm, iidx_line, iidx_row,
+				#           result_bm, 'bm')
 
-				# If all elements are equal
-				if np.unique(result).size == 1:
-					return np.nan, np.nan, np.nan, np.nan, np.nan
+			# If all elements are equal
+			if np.unique(result).size == 1:
+				return np.nan, np.nan, np.nan, np.nan, np.nan
 
-				# If second peak close to first
-				flat = result.flatten()
-				flat.sort()
+			# If second peak close to first
+			flat = result.flatten()
+			flat.sort()
 
-				#print('#Flat: %s' % flat)
+			#print('#Flat: %s' % flat)
 
-				#if abs(flat[-1]-flat[-2]) < 0.05:
-				#    return np.nan, np.nan, np.nan, np.nan, np.nan
+			#if abs(flat[-1]-flat[-2]) < 0.05:
+			#    return np.nan, np.nan, np.nan, np.nan, np.nan
 
-				ret = (lline_1, rrow_1, rrow_2-rrow_1, lline_2-lline_1, cc_max)
-				#return lline_1, rrow_1, u_direct, v_direct, cc_max
-			else:
-				#pass
-				# ! Testing (return result in any case)
-				ret = (np.nan, np.nan, np.nan, np.nan, np.nan)
-				'''
-				# if crop images have black stripes
-				if flag1 == 1:
-					print('IMG_1: %s_%s' % (iidx_line, iidx_row))
-					io.imsave('ci_%s_1/black_%s_%s.png' % (Conf.out_fname, iidx_line, iidx_row), im1)
-				if flag2 == 1:
-					print('IMG_2: %s_%s' % (idx_line, idx_row))
-					io.imsave('ci_%s_2/black_%s_%s.png' % (Conf.out_fname, iidx_line, iidx_row), im2)
-				'''
+			ret = (lline_1, rrow_1, rrow_2-rrow_1, lline_2-lline_1, cc_max)
+			#return lline_1, rrow_1, u_direct, v_direct, cc_max
+			#else:
+			#pass
+			# ! Testing (return result in any case)
+			#	ret = (np.nan, np.nan, np.nan, np.nan, np.nan)
+			'''
+			# if crop images have black stripes
+			if flag1 == 1:
+				print('IMG_1: %s_%s' % (iidx_line, iidx_row))
+				io.imsave('ci_%s_1/black_%s_%s.png' % (Conf.out_fname, iidx_line, iidx_row), im1)
+			if flag2 == 1:
+				print('IMG_2: %s_%s' % (idx_line, idx_row))
+				io.imsave('ci_%s_2/black_%s_%s.png' % (Conf.out_fname, iidx_line, iidx_row), im2)
+			'''
 
 		print("Processed block: {} from {}".format(itr, self.Count))
 		return ret
@@ -308,19 +308,20 @@ class CalcDrift(object):
 		ch = 0
 		j = 0
 		for i in range(im.shape[0] - 1):
-			while j < im.shape[1] - 1 and im[i,j] > 0:
+			while j < im.shape[1] - 1 and im[i,j] != 0 and im[i,j] != 255:
 				j += 1
 			else:
-				if j < im.shape[1] - 1 and im[i,j] == 0:
-					while im[i,j] == 0 and j < im.shape[1] - 1:
+				if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 255):
+					while (im[i,j] == 0 or im[i,j] == 255) and j < im.shape[1] - 1:
 						j += 1
 						ch += 1
-					if ch >= 55:
+					if ch >= 15:
 						flag = 1
 						#print('Black stripe detected!')
 						return flag
 			j = 0
 			ch = 0
+
 		return flag
 
 	# Matching

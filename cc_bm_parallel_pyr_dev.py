@@ -133,11 +133,11 @@ def check_borders(im):
         while j < im.shape[1] - 1 and im[i,j] > 0:
             j += 1
         else:
-            if j < im.shape[1] - 1 and im[i,j] == 0:
+            if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 255):
                 while im[i,j] == 0 and j < im.shape[1] - 1:
                     j += 1
                     ch += 1
-                if ch >= 55:
+                if ch >= 15:
                     flag = 1
                     #print('Black stripe detected!')
                     return flag
@@ -262,7 +262,7 @@ def filter_Rmin(arr_cc_max):
 def plot_scatter(fname, img, x, y, msize=0.1):
     ''' Plot scatter of initial points '''
     plt.clf()
-    plt.imshow(img1, cmap='gray')
+    plt.imshow(Conf.img1, cmap='gray')
     plt.scatter(x, y, s=msize, color='red')
     plt.savefig(fname, bbox_inches='tight', dpi=600)
 
@@ -297,18 +297,18 @@ def plot_arrows_one_color(fname, img, x, y, u, v, cc, arrwidth=0.005, headwidth=
 
 def crop_images(img1, img2, y0, x0):
     '''
-    :param img1: image1
-    :param img2: image2
+    :param Conf.img1: image1
+    :param Conf.img2: image2
     :param x0: center of patch on image2
     :param y0: center of patch on image2
     :return: image patches
     '''
 
-    # TODO: x2, y2 for img2
+    # TODO: x2, y2 for Conf.img2
 
     height, width = img1.shape
 
-    # Crop img1
+    # Crop Conf.img1
     iidx_line = int(x0)
     iidx_row = int(y0)
 
@@ -317,20 +317,20 @@ def crop_images(img1, img2, y0, x0):
     RRt0 = np.min([iidx_line + Conf.grid_step, height])
     RRt1 = np.min([iidx_row + Conf.grid_step, width])
 
-    # Crop patch from img1
-    im1 = img1[LLt0:RRt0, LLt1:RRt1]
+    # Crop patch from Conf.img1
+    im1 = Conf.img1[LLt0:RRt0, LLt1:RRt1]
 
     LLi0 = np.max([0, iidx_line - Conf.grid_step * Conf.search_area])
     LLi1 = np.max([0, iidx_row - Conf.grid_step * Conf.search_area])
     RRi0 = np.min([iidx_line + Conf.grid_step * Conf.search_area, height])
     RRi1 = np.min([iidx_row + Conf.grid_step * Conf.search_area, width])
 
-    # Crop search area from img2
-    im2 = img2[LLi0:RRi0, LLi1:RRi1]
+    # Crop search area from Conf.img2
+    im2 = Conf.img2[LLi0:RRi0, LLi1:RRi1]
 
     # Offset for image1
-    y_offset_img1 = iidx_line  # - Conf.block_size/2
-    x_offset_img1 = iidx_row  # - Conf.block_size/2
+    y_offset_Conf.img1 = iidx_line  # - Conf.block_size/2
+    x_offset_Conf.img1 = iidx_row  # - Conf.block_size/2
 
     #####################
     # Filtering
@@ -1109,14 +1109,14 @@ def cc(arguments):
     f=0
     # Parse arguments
     #iidx_line, iidx_row, LLi0, LLi1, im1_name, im2_name, pref = arguments
-    iidx_line, iidx_row, Lt0, Rt0, Lt1, Rt1, Li0, Ri0, Li1, Ri1, pref, img1, img2, itr, itrCnt = arguments
+    iidx_line, iidx_row, Lt0, Rt0, Lt1, Rt1, Li0, Ri0, Li1, Ri1, pref, Conf.img1, Conf.img2, itr, itrCnt = arguments
 
     #print("Processing block: {} from {} ({:.2f}%) at pid={}".format(itr, itrCnt, itr/itrCnt*100, multiprocessing.current_process()))
 
     if iidx_line is not None:
         # Open two images
-        im1 = img1[Lt0:Rt0, Lt1:Rt1]
-        im2 = img2[Li0:Ri0, Li1:Ri1]
+        im1 = Conf.img1[Lt0:Rt0, Lt1:Rt1]
+        im2 = Conf.img2[Li0:Ri0, Li1:Ri1]
 
         #####################
         # Filtering
@@ -1237,47 +1237,44 @@ if __name__ == '__main__':
 
     global_start_time = time.time()
 
-    img1 = io.imread(Conf.f1_name, 'L')#[850:2000, 2900:4200]
-    img2 = io.imread(Conf.f2_name, 'L')#[850:2000, 2900:4200]
-
     # Downscale
     if Conf.rescale_apply:
         print('Rescaling...')
-        img1 = rescale(img1, 1.0 / Conf.rescale_factor)
-        img2 = rescale(img2, 1.0 / Conf.rescale_factor)
+        Conf.img1 = rescale(Conf.img1, 1.0 / Conf.rescale_factor)
+        Conf.img2 = rescale(Conf.img2, 1.0 / Conf.rescale_factor)
         print('Done!')
 
     # Image intensity normalization
     if Conf.image_intensity_byte_normalization:
         print('\nImage intensity rescaling (0, 255)...')
-        #img1 = exposure.adjust_log(img1)
-        #img2 = exposure.adjust_log(img2)
+        #Conf.img1 = exposure.adjust_log(Conf.img1)
+        #Conf.img2 = exposure.adjust_log(Conf.img2)
 
         # Rescale intensity only
-        img1 = exposure.rescale_intensity(img1, out_range=(0, 255))
-        img2 = exposure.rescale_intensity(img2, out_range=(0, 255))
+        Conf.img1 = exposure.rescale_intensity(Conf.img1, out_range=(0, 255))
+        Conf.img2 = exposure.rescale_intensity(Conf.img2, out_range=(0, 255))
         print('Done!')
 
     # Normalization
     print('\nContrast enhacement...')
-    p2, p98 = np.percentile(img1, (2, 98))
-    img1 = img_as_ubyte(exposure.rescale_intensity(img1, in_range=(p2, p98)))
+    p2, p98 = np.percentile(Conf.img1, (2, 98))
+    Conf.img1 = img_as_ubyte(exposure.rescale_intensity(Conf.img1, in_range=(p2, p98)))
 
-    p2, p98 = np.percentile(img2, (2, 98))
-    img2 = img_as_ubyte(exposure.rescale_intensity(img2, in_range=(p2, p98)))
+    p2, p98 = np.percentile(Conf.img2, (2, 98))
+    Conf.img2 = img_as_ubyte(exposure.rescale_intensity(Conf.img2, in_range=(p2, p98)))
     print('Done!')
 
     #####################
     ### Calculate Drift ###
     #####################
     print('\nStart multiprocessing...')
-    nb_cpus = 2
+    nb_cpus = 40
 
-    height, width = img1.shape
+    height, width = Conf.img1.shape
     print('Image size Height: %s px Width: %s px' % (height, width))
 
     # init drift calculator class
-    Calc = cc_calc_drift.CalcDrift(Conf, img1, img2)
+    Calc = cc_calc_drift.CalcDrift(Conf, Conf.img1, Conf.img2)
     Calc.create_arguments(height, width)
 
     # arg generator
@@ -1298,9 +1295,9 @@ if __name__ == '__main__':
     print('\nPlotting...')
     try:
         plot_arrows_from_list(pref, '%s/%s_%s_01.png' % (Conf.res_dir, pref, Conf.out_fname),
-                            img1, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
+                            Conf.img1, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
         plot_arrows_from_list(pref, '%s/%s_%s_02.png' % (Conf.res_dir, pref, Conf.out_fname),
-                            img2, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
+                            Conf.img2, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
         print('Plot end!')
     except:
         print('Plot FAULT!')
@@ -1317,13 +1314,14 @@ if __name__ == '__main__':
     Cnt = Filter.filter_outliers(results)
 
     print('Done!')
-    print('Number of vectors: %d' % Cnt)
+    print('\nNumber of vectors: \n Unfiltered: %d   Filtered: %d\n' %
+          (Cnt[0], Cnt[1]))
 
     print('\nPlotting...')
-    plot_arrows('%s/01_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), img1, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
+    plot_arrows('%s/01_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img1, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
                 arrwidth=0.002, headwidth=5.5, flag_color=True)
 
-    plot_arrows('%s/02_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), img2, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
+    plot_arrows('%s/02_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img2, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
                 arrwidth=0.002, headwidth=5.5, flag_color=True)
 
     #####################
@@ -1416,17 +1414,17 @@ if __name__ == '__main__':
         plt.clf()
         from skimage.util import img_as_ubyte
         from skimage.filters.rank import entropy
-        entr_img1 = entropy(img1, disk(16))
+        entr_Conf.img1 = entropy(Conf.img1, disk(16))
         # xxx_f, yyy_f
         ff = open('%s/entropy/ent_NCC_%s_%s.txt' % (Conf.res_dir, d1, d2), 'w')
         for i in range(len(xxx_f)):
-            ff.write('%7d %7.2f\n' % (i+1, np.mean(entr_img1[yyy_f[i]-Conf.grid_step:yyy_f[i]+Conf.grid_step,
+            ff.write('%7d %7.2f\n' % (i+1, np.mean(entr_Conf.img1[yyy_f[i]-Conf.grid_step:yyy_f[i]+Conf.grid_step,
                                         xxx_f[i]-Conf.grid_step:xxx_f[i]+Conf.grid_step])))
         ff.close()
 
         # TODO:
 
-        plt.imshow(entr_img1, cmap=plt.cm.get_cmap('hot', 10))
+        plt.imshow(entr_Conf.img1, cmap=plt.cm.get_cmap('hot', 10))
         plt.colorbar()
         plt.clim(0, 10);
 

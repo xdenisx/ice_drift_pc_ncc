@@ -53,7 +53,7 @@ class CalcDriftFilter(object):
 		self.vvv_f = vvv_f
 		self.ccc_f = ccc_f
 
-		return len(uuu_f)
+		return len(uuu_f), len(uuu_f[~np.isnan(uuu_f)])
 
 	def filter_iterate(self, x1, y1, uu, vv, cc,
 							radius=256,
@@ -87,35 +87,59 @@ class CalcDriftFilter(object):
 			if num_nn[0] < total_neighbours:
 				idx_mask.append(i)
 
-			# Keep small vectors
-			if np.hypot(uu[i], vv[i]) < 10.:
-				pass
+			if np.isnan(vv[i]):
+				idx_mask.append(i)
 			else:
-				nn = vector_start_tree.query_radius(req_data, r=radius)
-				data = np.vstack((uu[nn[0]], vv[nn[0]])).T
+				px = 5
 
-				num_of_homo_NN = 0
-				num_of_length_homo_NN = 0
+				y1_max = int(min(y1[i] + px, self.Conf.img1.shape[0] - 1))
+				y1_min = int(max(y1[i] - px, 0))
 
-				####################################################################
-				# Loop through all found ice drift vectors to filter not homo
-				####################################################################
-				for ii in range(num_nn[0]):
+				x1_max = int(min(x1[i] + px, self.Conf.img1.shape[1] - 1))
+				x1_min = int(max(x1[i] - px, 0))
 
-					# Angle between "this" vector and others
-					angle_v1_v2 = self.angle_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+				y2_max = int(min(y1[i] + vv[i] + px, self.Conf.img1.shape[0] - 1))
+				y2_min = int(max(y1[i] + vv[i] - px, 0))
 
-					# Length between "this" vector and others
-					diff_v1_v2 = self.length_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+				x2_max = int(min(x1[i] + uu[i] + px, self.Conf.img1.shape[1] - 1))
+				x2_min = int(max(x1[i] + uu[i] - px, 0))
 
-					if angle_v1_v2 <= angle_difference:
-						num_of_homo_NN = num_of_homo_NN + 1
+				meanI_start = np.nanmean(self.Conf.img1[y1_min:y1_max, x1_min:x1_max])
+				meanI_end = np.nanmean(self.Conf.img2[y2_min:y2_max, x2_min:x2_max])
 
-					if diff_v1_v2 < length_difference:
-						num_of_length_homo_NN = num_of_length_homo_NN + 1
+				# Keep small vectors
+				if np.hypot(uu[i], vv[i]) < 10.:
+					pass
+				else:
+					if (meanI_start==0. or meanI_start==255. or meanI_end==0. or meanI_end==255.):
+						idx_mask.append(i)
+						continue
 
-				if not (num_of_homo_NN >= angle_neighbours and num_of_length_homo_NN >= length_neighbours):
-					idx_mask.append(i)
+					nn = vector_start_tree.query_radius(req_data, r=radius)
+					data = np.vstack((uu[nn[0]], vv[nn[0]])).T
+
+					num_of_homo_NN = 0
+					num_of_length_homo_NN = 0
+
+					####################################################################
+					# Loop through all found ice drift vectors to filter not homo
+					####################################################################
+					for ii in range(num_nn[0]):
+
+						# Angle between "this" vector and others
+						angle_v1_v2 = self.angle_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+
+						# Length between "this" vector and others
+						diff_v1_v2 = self.length_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+
+						if angle_v1_v2 <= angle_difference:
+							num_of_homo_NN = num_of_homo_NN + 1
+
+						if diff_v1_v2 < length_difference:
+							num_of_length_homo_NN = num_of_length_homo_NN + 1
+
+					if not (num_of_homo_NN >= angle_neighbours and num_of_length_homo_NN >= length_neighbours):
+						idx_mask.append(i)
 
 		tt = list(set(idx_mask))
 		iidx_mask = np.array(tt)

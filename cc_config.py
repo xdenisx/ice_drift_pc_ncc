@@ -1,6 +1,7 @@
 import time
 import os.path
 import re
+from skimage import io
 
 class Config(object):
 	"""Base configuration class. Constants and parameters here.
@@ -61,3 +62,6 @@ class Config(object):
 
 		if self.plot_correlation_peaks:
 			os.makedirs(self.res_peaks_plot_dir, exist_ok=True)
+
+		self.img1 = io.imread(self.f1_name, 'L')
+		self.img2 = io.imread(self.f2_name, 'L')
