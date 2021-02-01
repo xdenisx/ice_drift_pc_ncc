@@ -90,7 +90,7 @@ class CalcDriftFilter(object):
 			if np.isnan(vv[i]):
 				idx_mask.append(i)
 			else:
-				px = 5
+				px = 2
 
 				y1_max = int(min(y1[i] + px, self.Conf.img1.shape[0] - 1))
 				y1_min = int(max(y1[i] - px, 0))
@@ -104,14 +104,17 @@ class CalcDriftFilter(object):
 				x2_max = int(min(x1[i] + uu[i] + px, self.Conf.img1.shape[1] - 1))
 				x2_min = int(max(x1[i] + uu[i] - px, 0))
 
-				meanI_start = np.nanmean(self.Conf.img1[y1_min:y1_max, x1_min:x1_max])
+				meanI_start_01 = np.nanmean(self.Conf.img1[y1_min:y1_max, x1_min:x1_max])
+				meanI_start_02 = np.nanmean(self.Conf.img2[y1_min:y1_max, x1_min:x1_max])
 				meanI_end = np.nanmean(self.Conf.img2[y2_min:y2_max, x2_min:x2_max])
 
 				# Keep small vectors
 				if np.hypot(uu[i], vv[i]) < 10.:
 					pass
 				else:
-					if (meanI_start==0. or meanI_start==255. or meanI_end==0. or meanI_end==255.):
+					if (meanI_start_01==0. or meanI_start_01==255. or
+							meanI_start_02==0. or meanI_start_02==255.
+							or meanI_end==0. or meanI_end==255.):
 						idx_mask.append(i)
 						continue
 

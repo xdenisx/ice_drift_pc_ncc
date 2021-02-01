@@ -320,10 +320,10 @@ def crop_images(img1, img2, y0, x0):
     # Crop patch from Conf.img1
     im1 = Conf.img1[LLt0:RRt0, LLt1:RRt1]
 
-    LLi0 = np.max([0, iidx_line - Conf.grid_step * Conf.search_area])
-    LLi1 = np.max([0, iidx_row - Conf.grid_step * Conf.search_area])
-    RRi0 = np.min([iidx_line + Conf.grid_step * Conf.search_area, height])
-    RRi1 = np.min([iidx_row + Conf.grid_step * Conf.search_area, width])
+    LLi0 = np.max([0, iidx_line - Conf.block_size * Conf.search_area])
+    LLi1 = np.max([0, iidx_row - Conf.block_size * Conf.search_area])
+    RRi0 = np.min([iidx_line + Conf.block_size * Conf.search_area, height])
+    RRi1 = np.min([iidx_row + Conf.block_size * Conf.search_area, width])
 
     # Crop search area from Conf.img2
     im2 = Conf.img2[LLi0:RRi0, LLi1:RRi1]
