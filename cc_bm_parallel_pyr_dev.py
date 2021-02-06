@@ -1378,6 +1378,10 @@ if __name__ == '__main__':
     # (left_value,delta_x,rotation_x,top_value,rotation_y,delta_y)
 
     # Fluip data along Y (form numpy structire to normal)
+
+    #####################
+    # Divergence
+    #####################
     divergence_gtiff = divergence*10**4
     GeoT = (Calc.geotransform[0] - Conf.grid_step/2.*Calc.pixelHeight, Conf.grid_step*Calc.pixelWidth, 0.,
             Calc.geotransform[3] + Conf.grid_step/2.*Calc.pixelHeight, 0., Conf.grid_step*Calc.pixelHeight)
@@ -1391,7 +1395,24 @@ if __name__ == '__main__':
     #               divergence_gtiff, NDV, u_2d.shape[0], u_2d.shape[1], GeoT, Projection, divergence_gtiff)
 
     create_geotiff('%s/defo/gtiff/%s_ICEDIV_%s' % (Conf.res_dir, files_pref, Conf.out_fname), divergence_gtiff, NDV, GeoT, Projection)
-    print('geotiff created!\n')
+    print('Divergence geotiff created!\n')
+
+    #####################
+    # Shear
+    #####################
+    shear_gtiff = shear * 10 ** 4
+    GeoT = (Calc.geotransform[0] - Conf.grid_step / 2. * Calc.pixelHeight, Conf.grid_step * Calc.pixelWidth, 0.,
+            Calc.geotransform[3] + Conf.grid_step / 2. * Calc.pixelHeight, 0., Conf.grid_step * Calc.pixelHeight)
+    NDV = np.nan
+
+    # Get projection WKT
+    gd_raster = gdal.Open(Conf.f1_name)
+    Projection = gd_raster.GetProjection()
+
+    create_geotiff('%s/defo/gtiff/%s_ICESHEAR_%s' % (Conf.res_dir, files_pref, Conf.out_fname), shear_gtiff, NDV,
+                   GeoT, Projection)
+    print('Divergence geotiff created!\n')
+
     ################
     # END Geotiff
     ################
