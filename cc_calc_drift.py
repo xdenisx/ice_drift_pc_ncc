@@ -216,6 +216,7 @@ class CalcDrift(object):
 		img_laplace_filtering = self.Conf.img_laplace_filtering
 		img_gradient_filtering = self.Conf.img_gradient_filtering
 		img_scharr_filtering = self.Conf.img_scharr_filtering
+
 		plot_correlation_peaks = self.Conf.plot_correlation_peaks
 		median_kernel = self.Conf.median_kernel
 
@@ -257,7 +258,7 @@ class CalcDrift(object):
 
 			#ff_out_txt.write('%s, %s, %s, %s, %s, %s, %s, %s' %
 			#                 (lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1))
-			print(lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
+			#print(lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1)
 
 			#print('\nCOORDS: %s %s' % (arr_lines_1[i, j], arr_rows_1[i, j]))
 			#print('COORDS: %s %s\n' % (arr_lines_2[i, j], arr_rows_2[i, j]))
@@ -298,7 +299,7 @@ class CalcDrift(object):
 				io.imsave('ci_%s_2/black_%s_%s.png' % (Conf.out_fname, iidx_line, iidx_row), im2)
 			'''
 
-		print("Processed block: {} from {}".format(itr, self.Count))
+		#print("Processed block: {} from {}".format(itr, self.Count))
 		return ret
 
 	# TODO: check

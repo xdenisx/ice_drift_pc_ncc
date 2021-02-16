@@ -57,11 +57,11 @@ class CalcDriftFilter(object):
 
 	def filter_iterate(self, x1, y1, uu, vv, cc,
 							radius=256,
-							angle_difference=5,
+							angle_difference=15,
 							length_difference=30,
-							total_neighbours=7,
-							angle_neighbours=7,
-							length_neighbours=7):
+							total_neighbours=3,
+							angle_neighbours=3,
+							length_neighbours=3):
 		# Get values of vector components
 		#uu = x2 - x1
 		#vv = y2 - y1
