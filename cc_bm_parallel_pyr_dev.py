@@ -46,6 +46,8 @@ import ogr
 import warnings
 warnings.filterwarnings('ignore')
 
+import matplotlib as mpl
+
 def remove_files(ddir):
     ffiles = glob.glob('%s/*.*' % ddir)
     for ifile in ffiles:
@@ -269,10 +271,14 @@ def plot_scatter(fname, img, x, y, msize=0.1):
 def plot_arrows(fname, img, x, y, u, v, cc, arrwidth=0.005, headwidth=3.5, flag_color=True):
     ''' Plot arrows on top of image '''
     plt.clf()
+    fig, ax = plt.subplots(figsize=(16, 9))
     plt.imshow(img, cmap='gray')
     if flag_color:
         plt.quiver(x, y, u, v, cc, angles='xy', scale_units='xy', width=arrwidth, headwidth=headwidth,
                scale=1, cmap='jet')
+
+        plt.quiver(x, y, u, v, cc, angles='xy', scale_units='xy', width=arrwidth, headwidth=headwidth,
+                   scale=1, cmap='jet')
         cbar = plt.colorbar()
         cbar.set_label('Correlation coeff.')
     else:
@@ -1382,6 +1388,11 @@ if __name__ == '__main__':
 
     # Normalization
     print('\nContrast enhacement...')
+
+    #print('\n### Laplacian! ###\n')
+    #Conf.img1 = cv2.Laplacian(Conf.img1, cv2.CV_64F, ksize=19)
+    #Conf.img2 = cv2.Laplacian(Conf.img2, cv2.CV_64F, ksize=19)
+
     p2, p98 = np.percentile(Conf.img1, (2, 98))
     Conf.img1 = img_as_ubyte(exposure.rescale_intensity(Conf.img1, in_range=(p2, p98)))
 

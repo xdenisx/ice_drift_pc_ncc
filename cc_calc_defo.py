@@ -91,7 +91,7 @@ class CalcDefo(object):
 				normalization_time=None,
 				cell_size=1.,
 				invert_meridional=True,
-				out_png_name='test.png'):
+				out_png_name='test.png', fill_NaN=True):
 		'''
 		Calculate deformation invariants from X and Y ice drift components
 
@@ -101,6 +101,28 @@ class CalcDefo(object):
 		cell_size - ground meters in a pixel
 		invert_meridional - invert y component (boolean)
 		'''
+
+		if fill_NaN:
+			print('\nFilling NaN values with nearest not NaN\n')
+			###############################
+			# TEST!
+			# Fill NaNs with NN values
+			###############################
+
+			# dX
+			mask = np.isnan(dx)
+			idx = np.where(~mask, np.arange(mask.shape[1]), 0)
+			np.maximum.accumulate(idx, axis=1, out=idx)
+			# out = arr[np.arange(idx.shape[0])[:, None], idx]
+			dx[mask] = dx[np.nonzero(mask)[0], idx[mask]]
+
+			# dY
+			mask = np.isnan(dy)
+			idx = np.where(~mask, np.arange(mask.shape[1]), 0)
+			np.maximum.accumulate(idx, axis=1, out=idx)
+			# out = arr[np.arange(idx.shape[0])[:, None], idx]
+			dy[mask] = dy[np.nonzero(mask)[0], idx[mask]]
+
 
 		# Cell size factor (in cm)
 		cell_size_cm = cell_size * 100.

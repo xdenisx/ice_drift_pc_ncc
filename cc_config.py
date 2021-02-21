@@ -24,19 +24,19 @@ class Config(object):
 
 		self.image_intensity_byte_normalization = True
 
-		self.speckle_filtering = False
+		self.speckle_filtering = True
 		self.speckle_filter_names = ['Anisd']
 		self.speckle_filter_name = 'Anisd'
 		self.speckle_filter_parameters = {
+			'Anisd': {
+				'N': 11,
+				'kappa': 300,
+				'equation': 1
+			},
 			'Gauss': {
 				'N': 9,
 				'sigma': 2,
 				'step': 5
-			},
-			'Anisd': {
-				'N': 9,
-				'kappa': 50,
-				'equation': 2
 			},
 			'Median': {
 				'N': 9,
