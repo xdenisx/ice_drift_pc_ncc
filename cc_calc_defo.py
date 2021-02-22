@@ -42,6 +42,7 @@ class CalcDefo(object):
 
 		# Fill 2D matrix with a data for deformation calculation
 		# Raw filtered vectors
+		# Invert to calculate actual position of deformation
 		for ch, index in enumerate(idxs_2d_not_nan):
 			ii, jj = index[0], index[1]
 			u_2d[ii,jj] = uuu_f[ch]
@@ -91,9 +92,9 @@ class CalcDefo(object):
 				normalization_time=None,
 				cell_size=1.,
 				invert_meridional=True,
-				out_png_name='test.png', fill_NaN=True):
+				out_png_name='divergence.png', fill_NaN=True):
 		'''
-		Calculate deformation invariants from X and Y ice drift components
+		Calculate deformation invariants from U and V ice drift components
 
 		dx, dy - x and y component of motion (pixels)
 		normalization - normalize to time (boolean)
@@ -105,24 +106,21 @@ class CalcDefo(object):
 		if fill_NaN:
 			print('\nFilling NaN values with nearest not NaN\n')
 			###############################
-			# TEST!
 			# Fill NaNs with NN values
 			###############################
-
 			# dX
 			mask = np.isnan(dx)
 			idx = np.where(~mask, np.arange(mask.shape[1]), 0)
-			np.maximum.accumulate(idx, axis=1, out=idx)
+			np.fmax.accumulate(idx, axis=1, out=idx)
 			# out = arr[np.arange(idx.shape[0])[:, None], idx]
 			dx[mask] = dx[np.nonzero(mask)[0], idx[mask]]
 
 			# dY
 			mask = np.isnan(dy)
 			idx = np.where(~mask, np.arange(mask.shape[1]), 0)
-			np.maximum.accumulate(idx, axis=1, out=idx)
+			np.fmax.accumulate(idx, axis=1, out=idx)
 			# out = arr[np.arange(idx.shape[0])[:, None], idx]
 			dy[mask] = dy[np.nonzero(mask)[0], idx[mask]]
-
 
 		# Cell size factor (in cm)
 		cell_size_cm = cell_size * 100.

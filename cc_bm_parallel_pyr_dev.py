@@ -286,6 +286,15 @@ def plot_arrows(fname, img, x, y, u, v, cc, arrwidth=0.005, headwidth=3.5, flag_
                    scale=1, color='yellow')
     plt.savefig(fname, bbox_inches='tight', dpi=600)
 
+    # Plot start points
+    plt.clf()
+    fig, ax = plt.subplots(figsize=(16, 9))
+    plt.imshow(img, cmap='gray')
+    plt.scatter(x[~np.isnan(u)], y[~np.isnan(u)], s=5, c='red')
+    plt.savefig('%s/pts_%s' % (os.path.dirname(fname), os.path.basename(fname)), bbox_inches='tight', dpi=600)
+
+
+
 # TODO!: remove
 def plot_arrows_one_color(fname, img, x, y, u, v, cc, arrwidth=0.005, headwidth=3.5, flag_color=False):
     ''' Plot arrows on top of image '''
