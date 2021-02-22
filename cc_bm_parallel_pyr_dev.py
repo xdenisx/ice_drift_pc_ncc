@@ -290,7 +290,7 @@ def plot_arrows(fname, img, x, y, u, v, cc, arrwidth=0.005, headwidth=3.5, flag_
     plt.clf()
     fig, ax = plt.subplots(figsize=(16, 9))
     plt.imshow(img, cmap='gray')
-    plt.scatter(x[~np.isnan(u)], y[~np.isnan(u)], s=5, c='red')
+    plt.scatter(x[~np.isnan(u)], y[~np.isnan(u)], s=Conf.grid_step/2., facecolors='yellow', edgecolors='black')
     plt.savefig('%s/pts_%s' % (os.path.dirname(fname), os.path.basename(fname)), bbox_inches='tight', dpi=600)
 
 
