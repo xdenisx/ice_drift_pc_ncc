@@ -109,7 +109,7 @@ class CalcDriftFilter(object):
 				meanI_end = np.nanmean(self.Conf.img2[y2_min:y2_max, x2_min:x2_max])
 
 				# Keep small vectors
-				if np.hypot(uu[i], vv[i]) < 10.:
+				if np.hypot(uu[i], vv[i]) < 5.:
 					pass
 				else:
 					if (meanI_start_01==0. or meanI_start_01==255. or

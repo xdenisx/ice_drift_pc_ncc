@@ -248,6 +248,8 @@ class CalcDrift(object):
 
 			# No black borders in the first image
 			#if flag1 == 0 and flag2 == 0:
+
+
 			u_direct, v_direct, result = self.matching(im1, im2)
 			# Peak maximum CC
 			cc_max = np.max(result)
@@ -255,6 +257,7 @@ class CalcDrift(object):
 			# Get coordinates with offsets
 			lline_2, rrow_2 = v_direct + Li0, u_direct +  Li1
 			lline_1, rrow_1 = iidx_line, iidx_row
+
 
 			#ff_out_txt.write('%s, %s, %s, %s, %s, %s, %s, %s' %
 			#                 (lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1))
