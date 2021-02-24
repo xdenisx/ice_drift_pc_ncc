@@ -110,10 +110,11 @@ class CalcDrift(object):
 				y_2d[i, j] = idx_row
 
 				# Convert x and y to lon lat
-				xx1 = geotransform[0] + idx_line * pixelWidth
-				yy1 = geotransform[3] + idx_row * pixelHeight
+				xx1 = geotransform[0] + idx_row * pixelWidth
+				yy1 = geotransform[3] + idx_line * pixelHeight
 
 				try:
+					# ?
 					latlon = transform.TransformPoint(float(xx1), float(yy1))
 					ilon = latlon[0]
 					ilat = latlon[1]
@@ -192,6 +193,9 @@ class CalcDrift(object):
 		self.v_2d = v_2d
 		self.u_2d_med = u_2d_med
 		self.v_2d_med = v_2d_med
+
+		self.lon_2d = lon_2d
+		self.lat_2d = lat_2d
 
 		self.Count = len(ll_line_0)
 		self.peak_pref = ['dr'] * self.Count
