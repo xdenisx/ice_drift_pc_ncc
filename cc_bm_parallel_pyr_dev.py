@@ -995,18 +995,15 @@ def make_nc(nc_fname, lons, lats, data, var_name):
     print(ds.file_format)
 
     # Dimensions
-    lat_dim = ds.createDimension('lat', lons.shape[0])
-    lon_dim = ds.createDimension('lon', lons.shape[1])
+    y_dim = ds.createDimension('y', lons.shape[0])
+    x_dim = ds.createDimension('x', lons.shape[1])
     time_dim = ds.createDimension('time', None)
 
     # Variables
     times = ds.createVariable('time', np.float64, ('time',))
-    latitudes = ds.createVariable('lat', np.float32, ('lat', 'lon',))
-    longitudes = ds.createVariable('lon', np.float32, ('lat', 'lon',))
-    defo = ds.createVariable(var_name, np.float32, ('lat', 'lon',))
-
-    # 10^(-4)
-    defo.scale_factor = 10000.
+    latitudes = ds.createVariable('lat', np.float32, ('y', 'x',))
+    longitudes = ds.createVariable('lon', np.float32, ('y', 'x',))
+    defo = ds.createVariable(var_name, np.float32, ('y', 'x',))
 
     # Global Attributes
     ds.description = 'Sea ice deformation product'
@@ -1017,6 +1014,7 @@ def make_nc(nc_fname, lons, lats, data, var_name):
     latitudes.units = 'degree_north'
     longitudes.units = 'degree_east'
     defo.units = '1 s-1'
+    defo.scale_factor = 10000.  # 10^(-4)
     times.units = 'hours since 0001-01-01 00:00:00'
     times.calendar = 'gregorian'
 
