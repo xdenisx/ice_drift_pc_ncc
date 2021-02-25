@@ -983,7 +983,7 @@ def calc_deformations(dx, dy, normalization=False, normalization_time=None, cell
 # !TODO:
 def make_nc(nc_fname, lons, lats, data):
     """
-    Make netcdf4 file for deformation (divergence, shear, total deformation), scaled 10^(-6)
+    Make netcdf4 file for deformation (divergence, shear, total deformation), scaled 10^(-4)
 
     """
 
@@ -1017,15 +1017,12 @@ def make_nc(nc_fname, lons, lats, data):
     # Variable Attributes
     latitudes.units = 'degree_north'
     longitudes.units = 'degree_east'
-    #defo.units = '1 s-1'
-    #defo.scale_factor = 10000.  # 10^(-4)
     times.units = 'hours since 0001-01-01 00:00:00'
     times.calendar = 'gregorian'
 
     # Put variables
     latitudes[:, :] = lats
     longitudes[:, :] = lons
-
 
     ds.close()
 
