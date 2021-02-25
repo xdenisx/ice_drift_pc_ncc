@@ -981,15 +981,13 @@ def calc_deformations(dx, dy, normalization=False, normalization_time=None, cell
     return mag_speed, divergence, curl, shear, total_deform
 
 # !TODO:
-def make_nc(nc_fname, lons, lats, data, var_name):
+def make_nc(nc_fname, lons, lats, data):
     """
     Make netcdf4 file for deformation (divergence, shear, total deformation), scaled 10^(-6)
 
     """
 
     print('\nStart making nc for defo...')
-    print(lats.shape)
-    print(data.shape)
 
     ds = Dataset(nc_fname, 'w', format='NETCDF4_CLASSIC')
     print(ds.file_format)
@@ -998,12 +996,18 @@ def make_nc(nc_fname, lons, lats, data, var_name):
     y_dim = ds.createDimension('y', lons.shape[0])
     x_dim = ds.createDimension('x', lons.shape[1])
     time_dim = ds.createDimension('time', None)
+    #data_dim = ds.createDimension('data', len([k for k in data.keys()]))
 
     # Variables
     times = ds.createVariable('time', np.float64, ('time',))
     latitudes = ds.createVariable('lat', np.float32, ('y', 'x',))
     longitudes = ds.createVariable('lon', np.float32, ('y', 'x',))
-    defo = ds.createVariable(var_name, np.float32, ('y', 'x',))
+
+    for var_name in data.keys():
+        globals()[var_name] = ds.createVariable(var_name, np.float32, ('y', 'x',))
+        globals()[var_name][:, :] = data[var_name]['data']
+        globals()[var_name].units = data[var_name]['units']
+        globals()[var_name].scale_factor = data[var_name]['scale_factor']
 
     # Global Attributes
     ds.description = 'Sea ice deformation product'
@@ -1013,15 +1017,15 @@ def make_nc(nc_fname, lons, lats, data, var_name):
     # Variable Attributes
     latitudes.units = 'degree_north'
     longitudes.units = 'degree_east'
-    defo.units = '1 s-1'
-    defo.scale_factor = 10000.  # 10^(-4)
+    #defo.units = '1 s-1'
+    #defo.scale_factor = 10000.  # 10^(-4)
     times.units = 'hours since 0001-01-01 00:00:00'
     times.calendar = 'gregorian'
 
     # Put variables
     latitudes[:, :] = lats
     longitudes[:, :] = lons
-    defo[:, :] = data
+
 
     ds.close()
 
@@ -1473,14 +1477,6 @@ if __name__ == '__main__':
                     '%s/vec/%s_ICEDRIFT_%s.json' % (Conf.res_dir, files_pref, Conf.out_fname),
                     gridded=False, data_format='geojson')
 
-    ############
-    # Netcdf
-    ############
-    # make_nc('%s/defo/nc/%s_ICEDIV_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname), lon_2d, lat_2d, divergence)
-    ############
-    # END Netcdf
-    ############
-
     ################
     # Geotiff
     ################
@@ -1491,14 +1487,9 @@ if __name__ == '__main__':
     except:
         pass
 
-    # (left_value,delta_x,rotation_x,top_value,rotation_y,delta_y)
+    scale_factor = 10**4
 
-    # Fluip data along Y (form numpy structire to normal)
-
-    #####################
-    # Divergence
-    #####################
-    divergence_gtiff = divergence*10**4
+    divergence_gtiff = divergence * scale_factor
     GeoT = (Calc.geotransform[0] - Conf.grid_step/2.*Calc.pixelHeight, Conf.grid_step*Calc.pixelWidth, 0.,
             Calc.geotransform[3] + Conf.grid_step/2.*Calc.pixelHeight, 0., Conf.grid_step*Calc.pixelHeight)
     NDV = np.nan
@@ -1515,7 +1506,7 @@ if __name__ == '__main__':
     #####################
     # Shear
     #####################
-    shear_gtiff = shear * 10 ** 4
+    shear_gtiff = shear * scale_factor
     GeoT = (Calc.geotransform[0] - Conf.grid_step / 2. * Calc.pixelHeight, Conf.grid_step * Calc.pixelWidth, 0.,
             Calc.geotransform[3] + Conf.grid_step / 2. * Calc.pixelHeight, 0., Conf.grid_step * Calc.pixelHeight)
     NDV = np.nan
@@ -1534,9 +1525,15 @@ if __name__ == '__main__':
     ############
     # Netcdf
     ############
-    print('\nStart making netCDF...\n')
-    make_nc('%s/defo/nc/%s_ICESHEAR_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname),
-            Calc.lon_2d, Calc.lat_2d, shear_gtiff, 'IceShear')
+    dict_deformation = {'ice_speed':  {'data': mag_speed, 'scale_factor': 1., 'units': 'cm/s'},
+                       'ice_divergence': {'data': divergence, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'ice_curl': {'data': curl, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'ice_shear': {'data': shear, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'total_deformation': {'data': total_deform, 'scale_factor': scale_factor, 'units': '1/s'}}
+
+    print('\nStart making netCDF for ice deformation...\n')
+    make_nc('%s/defo/nc/%s_ICEDEF_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname),
+            Calc.lon_2d, Calc.lat_2d, dict_deformation)
     print('Success!\n')
     ############
     # END Netcdf
