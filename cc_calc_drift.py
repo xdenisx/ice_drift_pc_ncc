@@ -110,10 +110,11 @@ class CalcDrift(object):
 				y_2d[i, j] = idx_row
 
 				# Convert x and y to lon lat
-				xx1 = geotransform[0] + idx_line * pixelWidth
-				yy1 = geotransform[3] + idx_row * pixelHeight
+				xx1 = geotransform[0] + idx_row * pixelWidth
+				yy1 = geotransform[3] + idx_line * pixelHeight
 
 				try:
+					# ?
 					latlon = transform.TransformPoint(float(xx1), float(yy1))
 					ilon = latlon[0]
 					ilat = latlon[1]
@@ -193,6 +194,9 @@ class CalcDrift(object):
 		self.u_2d_med = u_2d_med
 		self.v_2d_med = v_2d_med
 
+		self.lon_2d = lon_2d
+		self.lat_2d = lat_2d
+
 		self.Count = len(ll_line_0)
 		self.peak_pref = ['dr'] * self.Count
 
@@ -248,6 +252,8 @@ class CalcDrift(object):
 
 			# No black borders in the first image
 			#if flag1 == 0 and flag2 == 0:
+
+
 			u_direct, v_direct, result = self.matching(im1, im2)
 			# Peak maximum CC
 			cc_max = np.max(result)
@@ -255,6 +261,7 @@ class CalcDrift(object):
 			# Get coordinates with offsets
 			lline_2, rrow_2 = v_direct + Li0, u_direct +  Li1
 			lline_1, rrow_1 = iidx_line, iidx_row
+
 
 			#ff_out_txt.write('%s, %s, %s, %s, %s, %s, %s, %s' %
 			#                 (lline_1, rrow_1, lline_2, rrow_2, u_direct, Li0, v_direct, Li1))

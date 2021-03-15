@@ -47,6 +47,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import matplotlib as mpl
+import time
 
 def remove_files(ddir):
     ffiles = glob.glob('%s/*.*' % ddir)
@@ -980,88 +981,48 @@ def calc_deformations(dx, dy, normalization=False, normalization_time=None, cell
     return mag_speed, divergence, curl, shear, total_deform
 
 # !TODO:
-def make_nc(nc_fname, lons, lats, divergence):
+def make_nc(nc_fname, lons, lats, data):
     """
-    Make netcdf4 file for divergence, scaled 10^(-6)
-    :param filename: resultant filename with deformation
-    :param divergence: deformation fileld
-    :return:
+    Make netcdf4 file for deformation (divergence, shear, total deformation), scaled 10^(-4)
+
     """
-    print('\nStart makeing nc for defo...')
 
-    '''
-    ff = Dataset(filename, 'r')
-    lats = ff.variables['lat'][:]
-    lons = ff.variables['lon'][:]
-
-    # Lats Lons
-    try:
-        # if masked array
-        lats = ff.variables['lat'][:].data
-        lats[lats == -9999.] = np.nan
-        lons = ff.variables['lon'][:].data
-        lons[lons == -9999.] = np.nan
-    except:
-        lats = ff.variables['lat'][:]
-        lons = ff.variables['lon'][:]
-        lats[lats == 9.96921e+36] = np.nan
-        lons[lons == 9.96921e+36] = np.nan
-    '''
-
-    # Make netcdf4 for divergence
-    #lats.shape, divergence.shape
-
-    # !Transpose values matrix
-    divergence = divergence.transpose()
+    print('\nStart making nc for defo...')
 
     ds = Dataset(nc_fname, 'w', format='NETCDF4_CLASSIC')
     print(ds.file_format)
 
-    # level = dataset.createDimension('level', 10)
-    lat = ds.createDimension('lat', lats.shape[0])
-    lon = ds.createDimension('lon', lats.shape[1])
-    time = ds.createDimension('time', None)
-    #print(len(lon))
+    # Dimensions
+    y_dim = ds.createDimension('y', lons.shape[0])
+    x_dim = ds.createDimension('x', lons.shape[1])
+    time_dim = ds.createDimension('time', None)
+    #data_dim = ds.createDimension('data', len([k for k in data.keys()]))
 
-    '''
-    for dimname in dataset.dimensions.keys():
-        dim = dataset.dimensions[dimname]
-        print dimname, len(dim), dim.isunlimited()
-    '''
-
+    # Variables
     times = ds.createVariable('time', np.float64, ('time',))
-    latitudes = ds.createVariable('latitude', np.float32, ('lat', 'lon',))
-    longitudes = ds.createVariable('longitude', np.float32, ('lat', 'lon',))
+    latitudes = ds.createVariable('lat', np.float32, ('y', 'x',))
+    longitudes = ds.createVariable('lon', np.float32, ('y', 'x',))
 
-    div = ds.createVariable('ice_divergence', np.float32, ('lat', 'lon'))
-    # 10^(-6)
-    div.scale_factor = 1000000.
-
-    '''
-    for varname in ds.variables.keys():
-        var = ds.variables[varname]
-        print(varname, var.dtype, var.dimensions, var.shape)
-    '''
+    for var_name in data.keys():
+        globals()[var_name] = ds.createVariable(var_name, np.float32, ('y', 'x',))
+        globals()[var_name][:, :] = data[var_name]['data']
+        globals()[var_name].units = data[var_name]['units']
+        globals()[var_name].scale_factor = data[var_name]['scale_factor']
 
     # Global Attributes
-    import time
     ds.description = 'Sea ice deformation product'
     ds.history = 'Created ' + time.ctime(time.time())
-    ds.source = 'NIERSC'
+    ds.source = 'NIERSC/NERSC'
 
     # Variable Attributes
     latitudes.units = 'degree_north'
     longitudes.units = 'degree_east'
-    div.units = '1 s-1'
     times.units = 'hours since 0001-01-01 00:00:00'
     times.calendar = 'gregorian'
 
     # Put variables
-    latitudes[:] = lats
-    longitudes[:] = lons
-
-    divergence_scaled = divergence[:] * 10 ** 6
-    div[:, :] = divergence_scaled
+    latitudes[:, :] = lats
+    longitudes[:, :] = lons
 
     ds.close()
 
@@ -1424,7 +1385,7 @@ if __name__ == '__main__':
     ### Calculate Drift ###
     #####################
     print('\nStart multiprocessing...')
-    nb_cpus = 40
+    nb_cpus = 10
 
     height, width = Conf.img1.shape
     print('Image size Height: %s px Width: %s px' % (height, width))
@@ -1513,14 +1474,6 @@ if __name__ == '__main__':
                     '%s/vec/%s_ICEDRIFT_%s.json' % (Conf.res_dir, files_pref, Conf.out_fname),
                     gridded=False, data_format='geojson')
 
-    ############
-    # Netcdf
-    ############
-    # make_nc('%s/defo/nc/%s_ICEDIV_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname), lon_2d, lat_2d, divergence)
-    ############
-    # END Netcdf
-    ############
-
     ################
     # Geotiff
     ################
@@ -1531,14 +1484,9 @@ if __name__ == '__main__':
     except:
         pass
 
-    # (left_value,delta_x,rotation_x,top_value,rotation_y,delta_y)
+    scale_factor = 10**4
 
-    # Fluip data along Y (form numpy structire to normal)
-
-    #####################
-    # Divergence
-    #####################
-    divergence_gtiff = divergence*10**4
+    divergence_gtiff = divergence * scale_factor
     GeoT = (Calc.geotransform[0] - Conf.grid_step/2.*Calc.pixelHeight, Conf.grid_step*Calc.pixelWidth, 0.,
             Calc.geotransform[3] + Conf.grid_step/2.*Calc.pixelHeight, 0., Conf.grid_step*Calc.pixelHeight)
     NDV = np.nan
@@ -1551,12 +1499,11 @@ if __name__ == '__main__':
     #               divergence_gtiff, NDV, u_2d.shape[0], u_2d.shape[1], GeoT, Projection, divergence_gtiff)
 
     create_geotiff('%s/defo/gtiff/%s_ICEDIV_%s' % (Conf.res_dir, files_pref, Conf.out_fname), divergence_gtiff, NDV, GeoT, Projection)
-    print('Divergence geotiff created!\n')
 
     #####################
     # Shear
     #####################
-    shear_gtiff = shear * 10 ** 4
+    shear_gtiff = shear * scale_factor
     GeoT = (Calc.geotransform[0] - Conf.grid_step / 2. * Calc.pixelHeight, Conf.grid_step * Calc.pixelWidth, 0.,
             Calc.geotransform[3] + Conf.grid_step / 2. * Calc.pixelHeight, 0., Conf.grid_step * Calc.pixelHeight)
     NDV = np.nan
@@ -1567,11 +1514,27 @@ if __name__ == '__main__':
 
     create_geotiff('%s/defo/gtiff/%s_ICESHEAR_%s' % (Conf.res_dir, files_pref, Conf.out_fname), shear_gtiff, NDV,
                    GeoT, Projection)
-    print('Divergence geotiff created!\n')
 
     ################
     # END Geotiff
     ################
+
+    ############
+    # Netcdf
+    ############
+    dict_deformation = {'ice_speed':  {'data': mag_speed, 'scale_factor': 1., 'units': 'cm/s'},
+                       'ice_divergence': {'data': divergence, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'ice_curl': {'data': curl, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'ice_shear': {'data': shear, 'scale_factor': scale_factor, 'units': '1/s'},
+                       'total_deformation': {'data': total_deform, 'scale_factor': scale_factor, 'units': '1/s'}}
+
+    print('\nStart making netCDF for ice deformation...\n')
+    make_nc('%s/defo/nc/%s_ICEDEF_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname),
+            Calc.lon_2d, Calc.lat_2d, dict_deformation)
+    print('Success!\n')
+    ############
+    # END Netcdf
+    ############
 
     ############################
     # END EXPORT TO GEO-FORMATS

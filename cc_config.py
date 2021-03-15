@@ -67,7 +67,7 @@ class Config(object):
 		self.img_scharr_filtering = False
 
 		# Number of outliers filtering iterations
-		self.num_iter_outliers = 4
+		self.num_iter_outliers = 5
 
 		# Backmatching th
 		self.bm_th = 10
