@@ -3,7 +3,7 @@
 The two scripts are for downloading of Sentinel-1A/B Level-1 GRD data
 
 The current version operates with GeoJSON files with POINT or POLYGON geometry. To collect metadata for downloading 
-from Alaska SAR Facility server you need to create account there. To that please go:
+from Alaska SAR Facility server you need to create account there. For that, please go:
 
 >  https://urs.earthdata.nasa.gov/users/new
 
