@@ -1,4 +1,4 @@
-# Seninel-1 data downloading from ASF web-server
+# Sentinel-1 data downloading from ASF web-server
 
 The two scripts are for downloading of Sentinel-1A/B Level-1 GRD data
 
