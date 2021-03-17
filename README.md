@@ -16,19 +16,21 @@ run cc_bm_parallel_pyr_dev.py ./data/ASA_WSM__20071225T022840_0761_g.tif ./data/
 ```
 
 1.1 Config file
+```
 cc_config.py
+```
 
 the file contain all algorithm parameters
 
 1.2 The number of CPU's for parallel computing is defined in line 1274
  
-1.3 cc_calc_drift.py
+1.3 ```cc_calc_drift.py```
 Calculate ice drift
  
-1.4 cc_calc_defo.py
+1.4 ```cc_calc_defo.py```
 Calculate ice deformation
  
-1.5 cc_calc_drift_filter.py
+1.5 ```cc_calc_drift_filter.py```
 Erronemous ice drift vectors filtrering by homogenity criteria
 
 1.6
