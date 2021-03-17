@@ -1,4 +1,4 @@
-# ice_drift_pc_ncc
+# Sea ice drift retrieval from pair of successive SAR images
 Ice drift retrieval algorithm based on combination of normilized cross-correlation and phase correlation
 
 Programmed by: Denis Demchev, Anton Volkov
@@ -12,7 +12,7 @@ cmd arguments:
 Example of usage in IPython: 
 
 ```
-python cc_bm_parallel_pyr_dev.py clip_HH_S1B_EW_GRDM_1SDH_20200301T083237_20200301T083346_020496_026D68_5471_adjusted.tif clip_HH_S1B_EW_GRDM_1SDH_20200302T073529_20200302T073629_020510_026DD5_27F9_adjusted.tif 64 4 30
+run cc_bm_parallel_pyr_dev.py clip_HH_S1B_EW_GRDM_1SDH_20200301T083237_20200301T083346_020496_026D68_5471_adjusted.tif clip_HH_S1B_EW_GRDM_1SDH_20200302T073529_20200302T073629_020510_026DD5_27F9_adjusted.tif 64 4 30
 
 ```
 
