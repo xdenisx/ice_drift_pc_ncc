@@ -40,4 +40,3 @@ The output of the algorithm is saved in "res_DATE_TIME"
 You should get something like this:
 
 ![Drift result](test_res.png)
-Format: ![Alt Text](url)
