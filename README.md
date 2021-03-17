@@ -12,7 +12,8 @@ cmd arguments:
 Example of usage in IPython: 
 
 ```
-run cc_bm_parallel_pyr_dev.py ./data/ASA_WSM__20071225T022840_0761_g.tif ./data/ASA_WSM__20071226T115239_7547_g.tif 64 4 100
+python cc_bm_parallel_pyr_dev.py clip_HH_S1B_EW_GRDM_1SDH_20200301T083237_20200301T083346_020496_026D68_5471_adjusted.tif clip_HH_S1B_EW_GRDM_1SDH_20200302T073529_20200302T073629_020510_026DD5_27F9_adjusted.tif 64 4 30
+
 ```
 
 1.1 Config file
