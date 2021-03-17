@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "HV_IW_OCEAN",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -48.517126303763213, 41.591558546412955 ], [ -48.72073297114558, 48.944562367371901 ], [ -35.2317912570632, 48.978079885305185 ], [ -34.722774588607265, 41.400210446431338 ], [ -48.517126303763213, 41.591558546412955 ] ] ] } }
+]
+}
