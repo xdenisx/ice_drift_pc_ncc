@@ -93,6 +93,13 @@ def chack_save_pair(f1, f2, id):
 
 in_path = sys.argv[1]
 out_path = sys.argv[2]
+days_lag = int(sys.argv[3])
+
+try:
+    os.makedirs(out_path)
+except:
+    pass
+
 polarization = 'HH'
 id_pair = 0
 
@@ -102,6 +109,8 @@ for root, d_names, f_names in os.walk(in_path):
         if f_name.endswith('tiff') and f_name.find(polarization)>0:
             ifile = '%s/%s' % (root, f_name)
 
+            print('\n### %s ###\n' % os.path.basename(ifile))
+
             date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
             if not date_m is None:
@@ -109,18 +118,26 @@ for root, d_names, f_names in os.walk(in_path):
                                                  date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
                 dt1 = datetime.strptime(dt1_str, '%Y/%m/%dT%H:%M:%S')
 
-                dt2 = dt1 + timedelta(days=1)
+                dt2 = dt1 + timedelta(days=days_lag)
                 dt2_str = dt2.strftime("%Y%m%dT")
 
-                # try to find files within 1 day
-                dt2_files = glob.glob('%s/*%s*%s*' % (in_path, polarization, dt2_str))
+                td = dt2 - dt1
+                td_days = td.days
 
-                if not dt2_files is None:
-                    for dt2_file in dt2_files:
-                        print('\nPair %02d' % id_pair)
-                        print('\nf1: %s' % os.path.basename(f_name))
-                        print('f2: %s\n' % os.path.basename(dt2_file))
-                        id_pair = chack_save_pair(ifile, dt2_file, id_pair)
+                for i in range(1, td_days+1, 1):
+
+                    dt2_i = dt1 + timedelta(days=i)
+                    dt2_i_str = dt2_i.strftime("%Y%m%dT")
+
+                    # try to find files within i days
+                    dt2_i_files = glob.glob('%s/*%s*%s*' % (in_path, polarization, dt2_i_str))
+
+                    if not dt2_i_files is None:
+                        for dt2_file in dt2_i_files:
+                            print('\nPair %02d' % id_pair)
+                            print('\nf1: %s' % os.path.basename(f_name))
+                            print('f2: %s\n' % os.path.basename(dt2_file))
+                            id_pair = chack_save_pair(ifile, dt2_file, id_pair)
 
 
                 '''
