@@ -1,4 +1,4 @@
-# Geotiff collocation (making a pair of images)
+# Geotiff collocation and making a pairs of images within defined time lag
 
 Usage: 
 
