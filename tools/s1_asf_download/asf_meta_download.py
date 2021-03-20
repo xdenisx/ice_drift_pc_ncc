@@ -112,10 +112,15 @@ if geo_file_geom == 'Point':
 
 if geo_file_geom == 'FeatureCollection':
     for feature in data['features']:
-        # List of the coordinates should be reversed as clockwise order is needed
-        for coord in feature['geometry']['coordinates'][0]:
-            #print(coord_str)
-            coord_str += '%.2f,%.2f,' % (coord[0], coord[1])
+        try:
+            # List of the coordinates should be reversed as clockwise order is needed
+            for coord in feature['geometry']['coordinates'][0]:
+                #print(coord_str)
+                coord_str += '%.2f,%.2f,' % (coord[0], coord[1])
+        except:
+            for coord in feature['geometry']['coordinates'][0][0]:
+                #print(coord_str)
+                coord_str += '%.2f,%.2f,' % (coord[0], coord[1])
     coord_str = coord_str[:-1]
 
     str_download = "wget --no-check-certificate -O %s %s/param?polygon=" \
