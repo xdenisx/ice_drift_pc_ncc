@@ -22,8 +22,6 @@ class Config(object):
 		### Section ###
 		### calculation params ###
 
-		self.image_intensity_byte_normalization = True
-
 		self.speckle_filtering = True
 		self.speckle_filter_names = ['Anisd']
 		self.speckle_filter_name = 'Anisd'
@@ -88,3 +86,8 @@ class Config(object):
 
 		self.img1 = io.imread(self.f1_name, 'L')
 		self.img2 = io.imread(self.f2_name, 'L')
+
+		if len(self.img1[self.img1 < 0]) > 0 and len(self.img2[self.img2 < 0]) > 0:
+			self.image_intensity_byte_normalization = False
+		else:
+			self.image_intensity_byte_normalization = False

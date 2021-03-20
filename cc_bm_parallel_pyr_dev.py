@@ -1354,21 +1354,20 @@ if __name__ == '__main__':
         # Rescale intensity only
         Conf.img1 = exposure.rescale_intensity(Conf.img1, out_range=(0, 255))
         Conf.img2 = exposure.rescale_intensity(Conf.img2, out_range=(0, 255))
+
+        p2, p98 = np.percentile(Conf.img1, (2, 98))
+        Conf.img1 = img_as_ubyte(exposure.rescale_intensity(Conf.img1, in_range=(p2, p98)))
+
+        p2, p98 = np.percentile(Conf.img2, (2, 98))
+        Conf.img2 = img_as_ubyte(exposure.rescale_intensity(Conf.img2, in_range=(p2, p98)))
+
         print('Done!')
 
     # Normalization
-    print('\nContrast enhacement...')
-
     #print('\n### Laplacian! ###\n')
     #Conf.img1 = cv2.Laplacian(Conf.img1, cv2.CV_64F, ksize=19)
     #Conf.img2 = cv2.Laplacian(Conf.img2, cv2.CV_64F, ksize=19)
 
-    p2, p98 = np.percentile(Conf.img1, (2, 98))
-    Conf.img1 = img_as_ubyte(exposure.rescale_intensity(Conf.img1, in_range=(p2, p98)))
-
-    p2, p98 = np.percentile(Conf.img2, (2, 98))
-    Conf.img2 = img_as_ubyte(exposure.rescale_intensity(Conf.img2, in_range=(p2, p98)))
-    print('Done!')
 
     # Speckle filtering
     if Conf.speckle_filtering:
