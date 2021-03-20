@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('date1', help='Date 1 (YYYYMMDD)')
     parser.add_argument('date2', help='Date 2 (YYYYMMDD)')
     parser.add_argument('mode', help='Acquisition mode (EW/IW)', choices=['EW', 'IW'])
-    parser.add_argument('polarisation', help='Polarization (HH+HV/VV+VH)', choices=['HH+HV', 'VV+VH'])
+    #parser.add_argument('polarisation', help='Polarization (HH+HV/VV+VH)', choices=['HH+HV', 'VV+VH'])
     parser.add_argument('grd_level', help='Processing level (GRD mode)', choices=['GRD_MD', 'GRD_HD'])
 
     # Optional arguments
@@ -54,8 +54,8 @@ except:
     print('\nError: date1 or date2 format is wrong!\nMust be: YYYYMMDD\nStop executing\n')
 
 # Modify polarization format
-if args.polarisation.find('+') > 0:
-    polarisation = '%s%%2b%s' % (args.polarisation.split('+')[0], args.polarisation.split('+')[1])
+#if args.polarisation.find('+') > 0:
+#    polarisation = '%s%%2b%s' % (args.polarisation.split('+')[0], args.polarisation.split('+')[1])
 
 # Metalink output file name
 current_directory = os.getcwd()
@@ -100,9 +100,9 @@ if geo_file_geom == 'Point':
 
     str_download = "wget --no-check-certificate -O %s %s/param?intersectsWith=" \
                        "%s\\&platform=%s\&start=%s-%02d-%02dT%02d:%02d:00UTC\\&end=%s-%02d-%02dT23:59:59UTC\\" \
-                       "&beamMode=%s\\&polarization=%s\\&processingLevel=%s\\&output=metalink" \
+                       "&beamMode=%s\\&processingLevel=%s\\&output=metalink" \
                        % (fname_meta, asf_url, coord_str, args.platform, dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute,
-                          dt2.year, dt2.month, dt2.day, args.mode, polarisation, args.grd_level)
+                          dt2.year, dt2.month, dt2.day, args.mode, args.grd_level)
 
     print('\nStart downloading...')
     os.system(str_download)
@@ -125,9 +125,9 @@ if geo_file_geom == 'FeatureCollection':
 
     str_download = "wget --no-check-certificate -O %s %s/param?polygon=" \
                    "%s\\&platform=%s\&start=%s-%02d-%02dT%02d:%02d:00UTC\\&end=%s-%02d-%02dT23:59:59UTC\\" \
-                   "&beamMode=%s\\&polarization=%s\\&processingLevel=%s\\&output=metalink" \
+                   "&beamMode=%s\\&processingLevel=%s\\&output=metalink" \
                    % (fname_meta, asf_url, coord_str, args.platform, dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute,
-                      dt2.year, dt2.month, dt2.day, args.mode, polarisation, args.grd_level)
+                      dt2.year, dt2.month, dt2.day, args.mode, args.grd_level)
 
     print('\nStart downloading...')
     os.system(str_download)
