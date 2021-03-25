@@ -90,4 +90,4 @@ class Config(object):
 		if len(self.img1[self.img1 < 0]) > 0 and len(self.img2[self.img2 < 0]) > 0:
 			self.image_intensity_byte_normalization = False
 		else:
-			self.image_intensity_byte_normalization = False
+			self.image_intensity_byte_normalization = True
