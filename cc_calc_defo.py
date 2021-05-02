@@ -92,7 +92,7 @@ class CalcDefo(object):
 				normalization_time=None,
 				cell_size=1.,
 				invert_meridional=True,
-				out_png_name='divergence.png', fill_NaN=True):
+				out_png_name='divergence.png', fill_NaN=False):
 		'''
 		Calculate deformation invariants from U and V ice drift components
 

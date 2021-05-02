@@ -72,10 +72,41 @@ for root, d_names, f_names in os.walk(in_path):
                 print('\nHV file NOT found!\n')
 
         try:
+            vv_file = glob.glob('%s/temp/%s.SAFE/measurement/*vv*.tiff' % (home, os.path.basename(ifile)[:-4]))
+            vv_file = vv_file[0]
+            print('\nVV file found!\n')
+        except:
+            try:
+                vv_file = glob.glob('%s/temp/%s/measurement/*vv*.tiff' % (home, os.path.basename(ifile)[:-4]))
+                vv_file = vv_file[0]
+                print('\nVV file found!\n')
+            except:
+                vv_file = ''
+                print('\nVV file NOT found!\n')
+
+        try:
             if hh_file!='':
                 calib_fname = glob.glob('%s/annotation/calibration/calibration*hh*.xml' % path_to_safe_file)[0]
                 out_calib_name = '%s/HH_%s.tiff' % (out_path, os.path.basename(ifile)[:-4])
                 perform_radiometric_calibration(hh_file, calib_fname, out_calib_name)
+
+                # Reproject and save to tiff
+                out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))
+
+                if not os.path.isfile(out_tiff):
+                    # Reproject geotiff
+                    save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
+                    # Delete calibrated unprojected tiff
+                    os.remove(out_calib_name)
+                else:
+                    os.remove(out_calib_name)
+                    print('\nFile: %s exist!\n' % out_tiff)
+
+            if vv_file!='':
+                grid_res = 20.
+                calib_fname = glob.glob('%s/annotation/calibration/calibration*vv*.xml' % path_to_safe_file)[0]
+                out_calib_name = '%s/VV_%s.tiff' % (out_path, os.path.basename(ifile)[:-4])
+                perform_radiometric_calibration(vv_file, calib_fname, out_calib_name)
 
                 # Reproject and save to tiff
                 out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))

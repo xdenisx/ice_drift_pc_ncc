@@ -114,7 +114,7 @@ class CalcDriftFilter(object):
 				else:
 					if (meanI_start_01==0. or meanI_start_01==255. or
 							meanI_start_02==0. or meanI_start_02==255.
-							or meanI_end==0. or meanI_end==255.):
+							or meanI_end==0. or meanI_end==255. or np.isnan(meanI_start_01) or np.isnan(meanI_start_02) or np.isnan(meanI_end)):
 						idx_mask.append(i)
 						continue
 
