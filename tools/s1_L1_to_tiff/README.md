@@ -3,5 +3,5 @@
 Usage: 
 
 ```
-python s1_L1_to_tiff.py /PATH/TO/S1/L1/ZIP/FILES /OUTPUT/PATH/FOR/GEOTIFFS 
+python s1_L1_to_tiff.py /PATH/TO/S1/L1/ZIP/FILES /OUTPUT/PATH/FOR/GEOTIFFS GRID_RESOLUTION[in meters] 
 ```

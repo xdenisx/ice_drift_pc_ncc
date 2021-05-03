@@ -4,7 +4,8 @@ Created on Sun Dec 11 01:46:12 2016
 
 @author: ekazakov
 
-modified: 06-03-2021
+modified: Denis Demchev
+
 """
 import xml.etree.ElementTree
 import numpy as np
@@ -74,7 +75,7 @@ def get_coefficients_array (xml_path, xml_element_name, xml_attribute_name, cols
             currentRow = np.empty([1,cols])
             currentRow[:] = np.nan
             while i < len(currentPixels):
-                currentRow[0,int(currentPixels[i])] = float(currentValues[i])
+                currentRow[0, int(currentPixels[i])] = float(currentValues[i])
                 i += 1
             
                 

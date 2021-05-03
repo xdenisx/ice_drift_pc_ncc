@@ -5,16 +5,19 @@ from os.path import expanduser
 from pathlib import Path
 import shutil
 
-#ifile = '/data/rrs/s1/fs/s1b/ew/zip/S1B_EW_GRDM_1SDH_20200301T083237_20200301T083346_020496_026D68_5471.zip'
-
 home = expanduser("~")
 
 in_path = sys.argv[1] # /data/rrs/s1/fs
 out_path = sys.argv[2]
+grid_res = sys.argv[3]
+
+reproject = False
+polarizations = ['HH', 'VV']
+polarizations = [x.lower() for x in polarizations]
+
+print('\nTarget polarizations: %s\n' % polarizations)
 
 proj4_str = '+proj=stere +lat_0=90 +lat_ts=90 +lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
-grid_res = 100.
-
 
 # Try to make temp dir
 try:
@@ -29,120 +32,47 @@ for root, d_names, f_names in os.walk(in_path):
     print(root, d_names, f_names)
     for f_name in f_names:
         ifile = '%s/%s' % (root, f_name)
-
         path_to_safe_file = '%s/temp/%s.SAFE' % (home, os.path.basename(ifile.split('.')[0]))
-
-        # Remove unziped SAFE folder
         shutil.rmtree(path_to_safe_file, ignore_errors=True)
 
         # Unzip
-        print('###############')
-        print('\nUNZIPPING...\n')
-        print('###############')
         idate = os.path.basename(ifile).split('_')[4]
         unzip = 'unzip %s -d %s/temp' % (ifile, home)
         os.system(unzip)
-        print('###############')
-        print('\nUNZIPPING END!\n')
-        print('###############')
 
-        try:
-            hh_file = glob.glob('%s/temp/%s.SAFE/measurement/*hh*.tiff' % (home, os.path.basename(ifile)[:-4]))
-            hh_file = hh_file[0]
-            print('\nHH file found!\n')
-        except:
+        for pol in polarizations:
             try:
-                hh_file = glob.glob('%s/temp/%s/measurement/*hh*.tiff' % (home, os.path.basename(ifile)[:-4]))
-                hh_file = hh_file[0]
-                print('\nHH file found!\n')
+                pol_file = glob.glob('%s/temp/%s.SAFE/measurement/*%s*.tiff' %
+                                     (home, os.path.basename(ifile)[:-4], pol))[0]
+                print('\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+                print(pol_file)
+                print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+                print('\n%s file found!\n' % pol)
             except:
-                hh_file = ''
-                print('\nHH file NOT found!\n')
-        try:
-            hv_file = glob.glob('%s/temp/%s.SAFE/measurement/*hv*.tiff' % (home, os.path.basename(ifile)[:-4]))
-            hv_file = hv_file[0]
-            print('\nHV file found!\n')
-        except:
-            try:
-                hv_file = glob.glob('%s/temp/%s/measurement/*hv*.tiff' % (home, os.path.basename(ifile)[:-4]))
-                hv_file = hv_file[0]
-                print('\nHV file found!\n')
-            except:
-                hv_file = ''
-                print('\nHV file NOT found!\n')
+                try:
+                    pol_file = glob.glob('%s/temp/%s/measurement/*%s*.tiff' %
+                                         (home, os.path.basename(ifile)[:-4], pol))[0]
+                    print('\n%s file found!\n' % pol)
+                except:
+                    pol_file = ''
 
-        try:
-            vv_file = glob.glob('%s/temp/%s.SAFE/measurement/*vv*.tiff' % (home, os.path.basename(ifile)[:-4]))
-            vv_file = vv_file[0]
-            print('\nVV file found!\n')
-        except:
-            try:
-                vv_file = glob.glob('%s/temp/%s/measurement/*vv*.tiff' % (home, os.path.basename(ifile)[:-4]))
-                vv_file = vv_file[0]
-                print('\nVV file found!\n')
-            except:
-                vv_file = ''
-                print('\nVV file NOT found!\n')
+            if pol_file != '':
+                calib_fname = glob.glob('%s/annotation/calibration/calibration*%s*.xml' % (path_to_safe_file, pol))[0]
+                out_calib_name = '%s/%s_%s.tiff' % (out_path, os.path.basename(ifile)[:-4], pol)
+                perform_radiometric_calibration(pol_file, calib_fname, out_calib_name)
 
-        try:
-            if hh_file!='':
-                calib_fname = glob.glob('%s/annotation/calibration/calibration*hh*.xml' % path_to_safe_file)[0]
-                out_calib_name = '%s/HH_%s.tiff' % (out_path, os.path.basename(ifile)[:-4])
-                perform_radiometric_calibration(hh_file, calib_fname, out_calib_name)
+                if reproject:
+                    # Reproject and save to tiff in UPS
+                    out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))
 
-                # Reproject and save to tiff
-                out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))
+                    if not os.path.isfile(out_tiff):
+                        # Reproject geotiff
+                        save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
+                        # Delete calibrated unprojected tiff
+                        os.remove(out_calib_name)
+                    else:
+                        os.remove(out_calib_name)
+                        print('\nFile: %s exist!\n' % out_tiff)
 
-                if not os.path.isfile(out_tiff):
-                    # Reproject geotiff
-                    save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
-                    # Delete calibrated unprojected tiff
-                    os.remove(out_calib_name)
-                else:
-                    os.remove(out_calib_name)
-                    print('\nFile: %s exist!\n' % out_tiff)
-
-            if vv_file!='':
-                grid_res = 20.
-                calib_fname = glob.glob('%s/annotation/calibration/calibration*vv*.xml' % path_to_safe_file)[0]
-                out_calib_name = '%s/VV_%s.tiff' % (out_path, os.path.basename(ifile)[:-4])
-                perform_radiometric_calibration(vv_file, calib_fname, out_calib_name)
-
-                # Reproject and save to tiff
-                out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))
-
-                if not os.path.isfile(out_tiff):
-                    # Reproject geotiff
-                    save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
-                    # Delete calibrated unprojected tiff
-                    os.remove(out_calib_name)
-                else:
-                    os.remove(out_calib_name)
-                    print('\nFile: %s exist!\n' % out_tiff)
-
-            if hv_file!='':
-                calib_fname = glob.glob('%s/annotation/calibration/calibration*hv*.xml' % path_to_safe_file)[0]
-                out_calib_name = '%s/HV_%s.tiff' % (out_path, os.path.basename(ifile)[:-4])
-                perform_radiometric_calibration(hv_file, calib_fname, out_calib_name)
-
-                # Reproject and save to tiff
-                out_tiff = '%s/ups_%s' % (os.path.dirname(out_calib_name), os.path.basename(out_calib_name))
-                save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
-
-                if not os.path.isfile(out_tiff):
-                    # Reproject geotiff
-                    save_projected_geotiff(out_calib_name, proj4_str, grid_res, out_tiff)
-                    # Delete calibrated unprojected tiff
-                    os.remove(out_calib_name)
-                else:
-                    os.remove(out_calib_name)
-                    print('\nFile: %s exist!\n' % out_tiff)
-
-            # Remove unziped SAFE folder
-            shutil.rmtree(path_to_safe_file, ignore_errors=True)
-        except:
-            # Remove unziped SAFE folder
-            shutil.rmtree(path_to_safe_file, ignore_errors=True)
-
-
-
+        # Remove unziped SAFE folder
+        shutil.rmtree(path_to_safe_file, ignore_errors=True)
