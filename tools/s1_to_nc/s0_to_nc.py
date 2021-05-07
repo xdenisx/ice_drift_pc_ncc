@@ -3,6 +3,7 @@ import numpy as np
 from osgeo import gdal, osr
 import time
 import sys
+import os
 
 def make_nc(nc_fname, lons, lats, data):
     """
@@ -10,7 +11,7 @@ def make_nc(nc_fname, lons, lats, data):
 
     """
 
-    print('\nStart making nc for defo...')
+    print('\nStart making nc...')
 
     ds = Dataset(nc_fname, 'w', format='NETCDF4_CLASSIC')
     print(ds.file_format)
