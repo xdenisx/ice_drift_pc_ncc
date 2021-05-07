@@ -110,4 +110,4 @@ for i in range(len(polarizations)):
     ikey = '%s_%s' % (pars[i], polarizations[i])
     d_data[ikey] = {'data': data_2d, 'scale_factor': scale_f[i], 'units':  units[i]}
 
-make_nc('test_s0.nc', lon_2d, lat_2d, d_data)
+make_nc('%s.nc' % os.path.basename(f1_name).split('.')[0], lon_2d, lat_2d, d_data)
