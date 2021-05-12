@@ -58,7 +58,7 @@ class Config(object):
 		gt = ds.GetGeoTransform()
 		pixelSizeX = gt[1]
 		pixelSizeY = -gt[5]
-		self.pixel_size = (pixelSizeX+pixelSizeY)/2.
+		self.pixel_size = pixelSizeX
 		ds = None
 
 		self.rescale_apply = False
