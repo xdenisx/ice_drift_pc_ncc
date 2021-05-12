@@ -3,6 +3,7 @@ import os.path
 import re
 from skimage import io
 import cv2
+from osgeo import gdal
 
 class Config(object):
 	"""Base configuration class. Constants and parameters here.
@@ -53,7 +54,7 @@ class Config(object):
 		self.grid_step = grid_step
 
 		# Read raster grid cell size from geotiff file
-		ds = gdal.Opne(f1_name)
+		ds = gdal.Open(f1_name)
 		gt = ds.GetGeoTransform()
 		pixelSizeX = gt[1]
 		pixelSizeY = -gt[5]

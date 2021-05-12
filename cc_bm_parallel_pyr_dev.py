@@ -1483,7 +1483,7 @@ if __name__ == '__main__':
     except:
         pass
 
-    scale_factor = 10**4
+    scale_factor = 1
 
     divergence_gtiff = divergence * scale_factor
     GeoT = (Calc.geotransform[0] - Conf.grid_step/2.*Calc.pixelHeight, Conf.grid_step*Calc.pixelWidth, 0.,
@@ -1522,10 +1522,10 @@ if __name__ == '__main__':
     # Netcdf
     ############
     dict_deformation = {'ice_speed':  {'data': mag_speed, 'scale_factor': 1., 'units': 'cm/s'},
-                       'ice_divergence': {'data': divergence, 'scale_factor': scale_factor, 'units': '1/s'},
-                       'ice_curl': {'data': curl, 'scale_factor': scale_factor, 'units': '1/s'},
-                       'ice_shear': {'data': shear, 'scale_factor': scale_factor, 'units': '1/s'},
-                       'total_deformation': {'data': total_deform, 'scale_factor': scale_factor, 'units': '1/s'}}
+                       'ice_divergence': {'data': divergence, 'scale_factor': scale_factor, 'units': '1/h'},
+                       'ice_curl': {'data': curl, 'scale_factor': scale_factor, 'units': '1/h'},
+                       'ice_shear': {'data': shear, 'scale_factor': scale_factor, 'units': '1/h'},
+                       'total_deformation': {'data': total_deform, 'scale_factor': scale_factor, 'units': '1/h'}}
 
     print('\nStart making netCDF for ice deformation...\n')
     make_nc('%s/defo/nc/%s_ICEDEF_%s.nc' % (Conf.res_dir, files_pref, Conf.out_fname),

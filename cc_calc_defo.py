@@ -71,10 +71,9 @@ class CalcDefo(object):
 		mag_speed, divergence, curl, shear, total_deform = self.calculate(u_2d, v_2d,
 																normalization=True,
 																normalization_time=time_dif,
-																raster_cell_size=self.pixel_size,
-																defo_cell_size=self.grid_step,
-																invert_meridional=True,
-																out_png_name='test.png')
+																raster_cell_size=pixel_size,
+																defo_cell_size=self.Conf.grid_step,
+																invert_meridional=True)
 
 		# Calculate deformation for smoothed vectors
 		'''
@@ -89,12 +88,12 @@ class CalcDefo(object):
 		return mag_speed, divergence, curl, shear, total_deform
 
 	def calculate(self, dx, dy,
-				normalization=False,
+				normalization=True,
 				normalization_time=None,
 				raster_cell_size=100.,
-				defo_cell_size=10000.,
+				defo_cell_size=5000.,
 				invert_meridional=True,
-				out_png_name='divergence.png', fill_NaN=False):
+				fill_NaN=False):
 		'''
 		Calculate deformation invariants from U and V ice drift components
 
@@ -126,7 +125,20 @@ class CalcDefo(object):
 
 		# Cell and grid size to cm
 		raster_cell_size_cm = raster_cell_size * 100.
-		defo_cell_size_cm = defo_cell_size * 100.
+		defo_cell_size_cm = defo_cell_size * raster_cell_size_cm
+
+		print('\n### raster_cell_size_cm %s [cm]' % raster_cell_size_cm)
+		print('\n### defo_cell_size_cm %s [cm]\n' % defo_cell_size_cm)
+
+		if normalization:
+			print('Normalization...')
+			# Convert to ground distance (pixels*cell size)
+			dx = dx * raster_cell_size_cm # cm
+			dy = dy * raster_cell_size_cm # cm
+
+			# Get U/V components of speed (cm/s)
+			dx = dx / normalization_time
+			dy = dy / normalization_time
 
 		m_div = np.empty((dx.shape[0], dx.shape[1],))
 		m_div[:] = np.NAN
@@ -141,17 +153,6 @@ class CalcDefo(object):
 		if invert_meridional:
 			dy = dy * (-1)
 
-		if not normalization:
-			pass
-		else:
-			# Convert to ground distance (pixels*cell size)
-			dx = dx * raster_cell_size_cm # cm
-			dy = dy * raster_cell_size_cm # cm
-
-			# Get U/V components of speed (cm/s)
-			dx = dx / normalization_time
-			dy = dy / normalization_time
-
 		# Calculate magnitude (speed module) (cm/s)
 		mag_speed = np.hypot(dx, dy)
 
@@ -164,30 +165,35 @@ class CalcDefo(object):
 		#plt.clf()
 		#plt.imshow(m_div)
 
+		# Convert to cms per hour
+		dx = dx * 3600.
+		dy = dy * 3600.
+
 		for i in range(1, dx.shape[0] - 1):
 			for j in range(1, dx.shape[1] - 1):
 				# div
-				if (np.isnan(ddx[i, j + 1]) == False and np.isnan(ddx[i, j - 1]) == False
-						and np.isnan(ddy[i - 1, j]) == False and np.isnan(ddy[i + 1, j]) == False
-						and (np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
-					m_div[i, j] = 0.5 * ((ddx[i, j + 1] - ddx[i, j - 1]) + (ddy[i - 1, j] - ddy[i + 1, j])) / defo_cell_size_cm
+				if (np.isnan(dx[i, j + 1]) == False and np.isnan(dx[i, j - 1]) == False
+						and np.isnan(dy[i - 1, j]) == False and np.isnan(dy[i + 1, j]) == False
+						and (np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
+					m_div[i, j] = 0.5 * ((dx[i, j + 1] - dx[i, j - 1]) + (dy[i - 1, j] - dy[i + 1, j])) / defo_cell_size_cm
+					print('dx[i,j+1]: %s    div: %s' % (dx[i, j + 1], m_div[i, j]))
 
 				# Curl
-				if (np.isnan(ddy[i, j + 1]) == False and np.isnan(ddy[i, j - 1]) == False and
-						np.isnan(ddx[i - 1, j]) == False and np.isnan(ddx[i + 1, j]) == False
-						and (np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
-					m_curl[i, j] = 0.5 * (ddy[i, j + 1] - ddy[i, j - 1] - ddx[i - 1, j] + ddx[i + 1, j]) / defo_cell_size_cm
+				if (np.isnan(dy[i, j + 1]) == False and np.isnan(dy[i, j - 1]) == False and
+						np.isnan(dx[i - 1, j]) == False and np.isnan(dx[i + 1, j]) == False
+						and (np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
+					m_curl[i, j] = 0.5 * (dy[i, j + 1] - dy[i, j - 1] - dx[i - 1, j] + dx[i + 1, j]) / defo_cell_size_cm
 
 				# Shear
-				if (np.isnan(ddy[i + 1, j]) == False and np.isnan(ddy[i - 1, j]) == False and
-						np.isnan(ddx[i, j - 1]) == False and np.isnan(ddx[i, j + 1]) == False and
-						np.isnan(ddy[i, j - 1]) == False and np.isnan(ddy[i, j + 1]) == False and
-						np.isnan(ddx[i + 1, j]) == False and np.isnan(ddx[i - 1, j]) == False and
-						(np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
-					dc_dc = 0.5 * (ddy[i + 1, j] - ddy[i - 1, j])
-					dr_dr = 0.5 * (ddx[i, j - 1] - ddx[i, j + 1])
-					dc_dr = 0.5 * (ddy[i, j - 1] - ddy[i, j + 1])
-					dr_dc = 0.5 * (ddx[i + 1, j] - ddx[i - 1, j])
+				if (np.isnan(dy[i + 1, j]) == False and np.isnan(dy[i - 1, j]) == False and
+						np.isnan(dx[i, j - 1]) == False and np.isnan(dx[i, j + 1]) == False and
+						np.isnan(dy[i, j - 1]) == False and np.isnan(dy[i, j + 1]) == False and
+						np.isnan(dx[i + 1, j]) == False and np.isnan(dx[i - 1, j]) == False and
+						(np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
+					dc_dc = 0.5 * (dy[i + 1, j] - dy[i - 1, j])
+					dr_dr = 0.5 * (dx[i, j - 1] - dx[i, j + 1])
+					dc_dr = 0.5 * (dy[i, j - 1] - dy[i, j + 1])
+					dr_dc = 0.5 * (dx[i + 1, j] - dx[i - 1, j])
 
 					# !Exclude cell size factor!
 					m_shear[i, j] = np.sqrt((dc_dc - dr_dr) * (dc_dc - dr_dr) + (dc_dr - dr_dc) * (dc_dr - dr_dc)) / defo_cell_size_cm
