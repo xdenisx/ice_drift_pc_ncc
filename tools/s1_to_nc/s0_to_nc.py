@@ -7,7 +7,7 @@ import os
 
 def make_nc(nc_fname, lons, lats, data):
     """
-    Make netcdf4 file for deformation (divergence, shear, total deformation), scaled 10^(-4)
+    Make netcdf4 file with sigma0
 
     """
 

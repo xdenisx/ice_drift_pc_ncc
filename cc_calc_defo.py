@@ -71,7 +71,8 @@ class CalcDefo(object):
 		mag_speed, divergence, curl, shear, total_deform = self.calculate(u_2d, v_2d,
 																normalization=True,
 																normalization_time=time_dif,
-																cell_size=pixel_size,
+																raster_cell_size=self.pixel_size,
+																defo_cell_size=self.grid_step,
 																invert_meridional=True,
 																out_png_name='test.png')
 
@@ -90,7 +91,8 @@ class CalcDefo(object):
 	def calculate(self, dx, dy,
 				normalization=False,
 				normalization_time=None,
-				cell_size=1.,
+				raster_cell_size=100.,
+				defo_cell_size=10000.,
 				invert_meridional=True,
 				out_png_name='divergence.png', fill_NaN=False):
 		'''
@@ -122,9 +124,9 @@ class CalcDefo(object):
 			# out = arr[np.arange(idx.shape[0])[:, None], idx]
 			dy[mask] = dy[np.nonzero(mask)[0], idx[mask]]
 
-		# Cell size factor (in cm)
-		cell_size_cm = cell_size * 100.
-		cell_size_factor = 1 / cell_size_cm
+		# Cell and grid size to cm
+		raster_cell_size_cm = raster_cell_size * 100.
+		defo_cell_size_cm = defo_cell_size * 100.
 
 		m_div = np.empty((dx.shape[0], dx.shape[1],))
 		m_div[:] = np.NAN
@@ -139,13 +141,12 @@ class CalcDefo(object):
 		if invert_meridional:
 			dy = dy * (-1)
 
-		# Normilize u and v to 1 hour
 		if not normalization:
 			pass
 		else:
-			# Convert to ground distance (pixels*cell size(m) * 100.)
-			dx = dx * cell_size_cm # cm
-			dy = dy * cell_size_cm # cm
+			# Convert to ground distance (pixels*cell size)
+			dx = dx * raster_cell_size_cm # cm
+			dy = dy * raster_cell_size_cm # cm
 
 			# Get U/V components of speed (cm/s)
 			dx = dx / normalization_time
@@ -166,49 +167,30 @@ class CalcDefo(object):
 		for i in range(1, dx.shape[0] - 1):
 			for j in range(1, dx.shape[1] - 1):
 				# div
-				if (np.isnan(dx[i, j + 1]) == False and np.isnan(dx[i, j - 1]) == False
-					and np.isnan(dy[i - 1, j]) == False and np.isnan(dy[i + 1, j]) == False
-					and (np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
-					# m_div[i,j] = 0.5*((u_int[i,j + 1] - u_int[i,j - 1])  + (v_int[i + 1,j] - v_int[i - 1,j]))/m_cell_size
-
-					# !Exclude cell size factor!
-					m_div[i, j] = cell_size_factor * 0.5 * ((dx[i, j + 1] - dx[i, j - 1])
-															+ (dy[i - 1, j] - dy[i + 1, j]))
-					# print m_div[i,j]
+				if (np.isnan(ddx[i, j + 1]) == False and np.isnan(ddx[i, j - 1]) == False
+						and np.isnan(ddy[i - 1, j]) == False and np.isnan(ddy[i + 1, j]) == False
+						and (np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
+					m_div[i, j] = 0.5 * ((ddx[i, j + 1] - ddx[i, j - 1]) + (ddy[i - 1, j] - ddy[i + 1, j])) / defo_cell_size_cm
 
 				# Curl
-				if (np.isnan(dy[i, j + 1]) == False and np.isnan(dy[i, j - 1]) == False and
-							np.isnan(dx[i - 1, j]) == False and np.isnan(dx[i + 1, j]) == False
-					and (np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
-
-					# !Exclude cell size factor!
-					m_curl[i, j] = cell_size_factor * 0.5 * (dy[i, j + 1] - dy[i, j - 1]
-										- dx[i - 1, j] + dx[i + 1, j]) / cell_size
+				if (np.isnan(ddy[i, j + 1]) == False and np.isnan(ddy[i, j - 1]) == False and
+						np.isnan(ddx[i - 1, j]) == False and np.isnan(ddx[i + 1, j]) == False
+						and (np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
+					m_curl[i, j] = 0.5 * (ddy[i, j + 1] - ddy[i, j - 1] - ddx[i - 1, j] + ddx[i + 1, j]) / defo_cell_size_cm
 
 				# Shear
-				if (np.isnan(dy[i + 1, j]) == False and np.isnan(dy[i - 1, j]) == False and
-							np.isnan(dx[i, j - 1]) == False and np.isnan(dx[i, j + 1]) == False and
-							np.isnan(dy[i, j - 1]) == False and np.isnan(dy[i, j + 1]) == False and
-							np.isnan(dx[i + 1, j]) == False and np.isnan(dx[i - 1, j]) == False and
-						(np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
-					dc_dc = cell_size_factor * 0.5 * (dy[i + 1, j] - dy[i - 1, j])
-					dr_dr = cell_size_factor * 0.5 * (dx[i, j - 1] - dx[i, j + 1])
-					dc_dr = cell_size_factor * 0.5 * (dy[i, j - 1] - dy[i, j + 1])
-					dr_dc = cell_size_factor * 0.5 * (dx[i + 1, j] - dx[i - 1, j])
+				if (np.isnan(ddy[i + 1, j]) == False and np.isnan(ddy[i - 1, j]) == False and
+						np.isnan(ddx[i, j - 1]) == False and np.isnan(ddx[i, j + 1]) == False and
+						np.isnan(ddy[i, j - 1]) == False and np.isnan(ddy[i, j + 1]) == False and
+						np.isnan(ddx[i + 1, j]) == False and np.isnan(ddx[i - 1, j]) == False and
+						(np.isnan(ddx[i, j]) == False or np.isnan(ddy[i, j]) == False)):
+					dc_dc = 0.5 * (ddy[i + 1, j] - ddy[i - 1, j])
+					dr_dr = 0.5 * (ddx[i, j - 1] - ddx[i, j + 1])
+					dc_dr = 0.5 * (ddy[i, j - 1] - ddy[i, j + 1])
+					dr_dc = 0.5 * (ddx[i + 1, j] - ddx[i - 1, j])
 
 					# !Exclude cell size factor!
-					m_shear[i, j] = np.sqrt(
-						(dc_dc - dr_dr) * (dc_dc - dr_dr) + (dc_dr - dr_dc) * (dc_dr - dr_dc)) / cell_size
-
-					'''
-					# Den
-					dc_dc = 0.5*(v_int[i + 1,j] - v_int[i - 1,j])
-					dr_dr = 0.5*(u_int[i,j + 1] - u_int[i,j - 1])
-					dc_dr = 0.5*(v_int[i,j + 1] - v_int[i,j - 1])
-					dr_dc = 0.5*(u_int[i + 1,j] - u_int[i - 1,j])
-
-					m_shear[i,j] = np.sqrt((dc_dc -dr_dr) * (dc_dc -dr_dr) + (dc_dr - dr_dc) * (dc_dr - dr_dc))/m_cell_size
-					'''
+					m_shear[i, j] = np.sqrt((dc_dc - dr_dr) * (dc_dc - dr_dr) + (dc_dr - dr_dc) * (dc_dr - dr_dc)) / defo_cell_size_cm
 
 				# Total deformation
 				if (np.isnan(m_shear[i, j]) == False and np.isnan(m_div[i, j]) == False):
@@ -217,17 +199,6 @@ class CalcDefo(object):
 		# Invert dy back
 		if invert_meridional:
 			dy = dy * (-1)
-
-		# data = np.vstack((np.ravel(xx_int), np.ravel(yy_int), np.ravel(m_div), np.ravel(u_int), np.ravel(v_int))).T
-		divergence = m_div
-
-		# TODO: Plot Test Div
-		plt.clf()
-		plt.gca().invert_yaxis()
-
-		plt.imshow(divergence, cmap='RdBu', vmin=-0.00008, vmax=0.00008,
-				interpolation='nearest', zorder=2) # vmin=-0.06, vmax=0.06,
-
 
 		# Plot u and v values inside cells (for testing porposes)
 		'''
@@ -283,18 +254,4 @@ class CalcDefo(object):
 		# which is [0, 1]
 		#colormap = cm.inferno
 
-		# Plot arrows on top of the deformation
-		xxx = range(dx.shape[1])
-		yyy = range(dx.shape[0])
-
-		plt.quiver(xxx, yyy, dx, ddy, colors, cmap='Greys', zorder=3) #'YlOrBr')
-
-		# Invert Y axis
-		plt.savefig(out_png_name, bbox_inches='tight', dpi=800)
-
-		curl = m_curl
-		shear = m_shear
-		total_deform = m_tdef
-
-		# return mag in cm/s
-		return mag_speed, divergence, curl, shear, total_deform
+		return mag_speed, m_div, m_curl, m_shear, m_tdef

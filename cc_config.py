@@ -52,6 +52,14 @@ class Config(object):
 		self.search_area = search_area
 		self.grid_step = grid_step
 
+		# Read raster grid cell size from geotiff file
+		ds = gdal.Opne(f1_name)
+		gt = ds.GetGeoTransform()
+		pixelSizeX = gt[1]
+		pixelSizeY = -gt[5]
+		self.pixel_size = (pixelSizeX+pixelSizeY)/2.
+		ds = None
+
 		self.rescale_apply = False
 		self.rescale_factor = 2.
 
