@@ -13,6 +13,12 @@ from scipy import interpolate, ndimage
 from osgeo import gdal
 import os
 import numpy as np
+from osgeo import osr
+from osgeo import gdalconst
+from skimage.exposure import rescale_intensity
+from skimage.morphology import disk
+from skimage.filters import median
+from skimage import exposure
 
 GDALWARP_PATH = 'gdalwarp '
 
@@ -32,10 +38,11 @@ def save_array_as_geotiff_gcp_mode(input_array, output_path, base_raster):
     gcps = base_raster.GetGCPs()
     #gcps_count = base_raster.GetGCPCount ()
     gcps_projection = base_raster.GetGCPProjection ()
-    out_data = driver.Create(output_path,cols,rows,bands,cell_type)
+
+    out_data = driver.Create(output_path, cols, rows, bands, cell_type)
     #out_data.SetProjection (projection)
     #out_data.SetGeoTransform (transform)
-    out_data.SetGCPs(gcps,gcps_projection)
+    out_data.SetGCPs(gcps, gcps_projection)
 
     input_array[input_array < 0] = np.nan
     input_array[input_array == 0] = np.nan
@@ -109,8 +116,118 @@ def perform_noise_correction (input_tiff_path, calibration_xml_path, noise_xml_p
     noise_corrected_array = (measurement_file_array * measurement_file_array - noise_coefficients_array) / (radiometric_coefficients_array * radiometric_coefficients_array)
     save_array_as_geotiff_gcp_mode(noise_corrected_array, output_tiff_path, measurement_file)
     del measurement_file
-    
 
 def save_projected_geotiff(input_tiff, proj4_str, grid_res, out_tiff):
     proc_str = 'gdalwarp -of GTiff -tap -tr %s %s -t_srs \'%s\' %s %s' % (grid_res, grid_res, proj4_str, input_tiff, out_tiff)
     os.system(proc_str)
+
+def transform_gcps(gcp_list, ct):
+    new_gcp_list = []
+    for gcp in gcp_list:
+        # point = ogr.CreateGeometryFromWkt("POINT (%s %s)" % (gcp.GCPX, gcp.GCPY))
+        xy_target = ct.TransformPoint(gcp.GCPX, gcp.GCPY)
+        new_gcp_list.append(gdal.GCP(xy_target[0], xy_target[1], 0, gcp.GCPPixel, gcp.GCPLine))  # 0 stands for point elevation
+    return new_gcp_list
+
+def get_transformation(target):
+    source = osr.SpatialReference()
+    source.ImportFromEPSG(4326)
+    ct = osr.CoordinateTransformation(source, target)
+    return ct
+
+def scale_range (input, min, max):
+    input += -(np.min(input))
+    input /= np.max(input) / (max - min)
+    input += min
+    return input
+
+def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
+    # 1) creating CoordinateTransformation:
+    target = osr.SpatialReference()
+    target.ImportFromEPSG(t_srs)
+    ct = get_transformation(target)
+
+    # 2) reading GCPs from original image and transforming them:
+    print('\nOpen calibrated tiff: %s\n' % tif_path)
+    ds = gdal.Open(tif_path)
+    dt = ds.GetGeoTransform()
+
+    gcp_list = ds.GetGCPs()
+    new_gcp_list = transform_gcps(gcp_list, ct)
+
+    # 3) creating an image copy and writing transformed GCPs:
+    driver = gdal.GetDriverByName("VRT")
+    copy_ds = driver.CreateCopy("", ds)
+    copy_ds.SetGCPs(new_gcp_list, target.ExportToWkt())
+
+    # 4) warping a copy to get rid of GCP-referencing
+    #    target image will have a "true" georeference:
+    clb = gdal.TermProgress
+
+    if disk_output:
+        print('\nRES: %s\n' % res)
+        ds_wrap = gdal.Warp('', copy_ds, format="MEM", dstSRS="EPSG:%s" % t_srs, xRes=res, yRes=res, multithread=True, callback=clb)
+
+        # Clip data and rescale
+        band = ds_wrap.GetRasterBand(1)
+        arr = band.ReadAsArray()
+
+        [rows, cols] = arr.shape
+
+        #better_contrast = exposure.rescale_intensity(arr_out)
+
+        from_min = -35
+        from_max = -5
+        to_max = 255
+        to_min = 1
+
+        arr[np.isinf(arr)] = np.nan
+        #arr = np.clip(arr, from_min, from_max).astype(np.float32)
+        arr[arr > -5] = -5.
+        arr[arr < -35] = -35.
+
+        # Reduce speckle
+        print('\nApply median filter')
+        arr = median(arr, disk(3))
+        print('Done.\n')
+
+        print('\n@@@@@@@@@@ %s @@@@@@@@@@@\n' % np.nanmean(arr))
+
+        # Rescale
+        arr_out = rescale_intensity(arr, in_range=(np.nanmin(arr), np.nanmax(arr)),
+                                    out_range=(1, 255)).astype(np.uint8)
+
+        arr_out[np.isnan(arr_out)] = 255
+        arr_out[arr_out == 0] = 255
+
+        # Contrast enhacement
+        arr_out = exposure.adjust_gamma(arr_out, 1.5)
+
+        # Rescale again
+        #arr_out[np.isnan(arr_out)] = 255
+        #arr_out[arr_out == 0] = 255
+
+        driver = gdal.GetDriverByName('GTiff')
+        outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
+        outdata.SetGeoTransform(ds_wrap.GetGeoTransform())
+        outdata.SetProjection(ds_wrap.GetProjection())
+        outdata.GetRasterBand(1).WriteArray(arr_out)
+        outdata.GetRasterBand(1).SetNoDataValue(255)
+        outdata.FlushCache()
+        outdata = None
+        band = None
+        #ds = None
+
+        #out_ds = gdal.Translate(out_path, outdata, format='GTiff',
+        #                        scaleParams=[[-35, -5, 1, 255]], noData=0, bandList=[1], outputType=gdal.GDT_Byte)
+        #outdata = None
+    else:
+        pass
+        #out_ds = gdal.Warp("", copy_ds, format="MEM", dstSRS="EPSG:3995", srcNodata=0, dstNodata=0, xRes=40, yRes=40, multithread=True, callback=clb)
+
+    # 5) clean-up and exit
+    ds = None
+    ds_wrap = None
+    copy_ds = None
+
+    return 1
