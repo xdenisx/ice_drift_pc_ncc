@@ -1,0 +1,15 @@
+--2021-05-16 22:25:34--  https://scihub.copernicus.eu/dhus/odata/v1/Products('ac91e83c-efe6-442a-8637-5c3ebeb80da9')/$value
+Resolving scihub.copernicus.eu (scihub.copernicus.eu)... 146.59.215.226
+Connecting to scihub.copernicus.eu (scihub.copernicus.eu)|146.59.215.226|:443... connected.
+HTTP request sent, awaiting response... 401 Unauthorized
+Authentication selected: Basic realm="OData service"
+Reusing existing connection to scihub.copernicus.eu:443.
+HTTP request sent, awaiting response... 200 OK
+Length: 219575724 (209M) [application/octet-stream]
+Saving to: ‘/mnt/s1/arctic/zip/20210516/S1B_EW_GRDM_1SDH_20210516T062826_20210516T062926_026926_033780_411F.zip’
+
+     0K .......... ..........                                 100% 6,39M=33s
+
+Last-modified header invalid -- time-stamp ignored.
+2021-05-16 22:26:08 (6,39 MB/s) - ‘/mnt/s1/arctic/zip/20210516/S1B_EW_GRDM_1SDH_20210516T062826_20210516T062926_026926_033780_411F.zip’ saved [219575724/219575724]
+
