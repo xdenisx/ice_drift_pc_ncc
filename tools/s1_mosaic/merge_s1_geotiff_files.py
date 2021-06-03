@@ -8,6 +8,63 @@ import os, glob
 from osgeo import gdal
 import sys
 import matplotlib.ticker as ticker
+import scipy.ndimage.filters
+from skimage.morphology import disk
+from skimage.filters import median
+
+def gtiff_enhance(tif_path, out_path):
+    # Open mosaic
+    ds_mos = gdal.Open(tif_path)
+
+    # Clip data and rescale
+    band = ds_mos.GetRasterBand(1)
+    A0 = band.ReadAsArray()
+    A0[A0 == -999.] = np.nan
+    [rows, cols] = A0.shape
+
+    ###################################
+    # Contrast enhance
+    ###################################
+    # Map values to the (0, 255) range:
+
+    A0 = (A0 - np.nanmin(A0)) * 255.0 / (np.nanmax(A0) - np.nanmin(A0))
+
+    # Kernel for negative Laplacian:
+    kernel = np.ones((3, 3)) * (-1)
+    kernel[1, 1] = 6
+
+    # Convolution of the image with the kernel:
+    Lap = scipy.ndimage.filters.convolve(A0, kernel)
+
+    # Map Laplacian to some new range:
+    ShF = 200  # Sharpening factor!
+    Laps = Lap * ShF / np.nanmax(Lap)
+
+    # Add negative Laplacian to the original image:
+    A = A0 + Laps
+    # Set negative values to 0, values over 254 to 254:
+    A = np.clip(A, 0, 254)
+    ###################################
+    # END contrast enhance
+    ###################################
+
+    print('\nWriting geotiff...')
+    #A = median(A, disk(3))
+    A[np.isnan(A)] = 255
+    driver = gdal.GetDriverByName('GTiff')
+    outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
+    outdata.SetGeoTransform(ds_mos.GetGeoTransform())
+    outdata.SetProjection(ds_mos.GetProjection())
+    outdata.GetRasterBand(1).WriteArray(A)
+    outdata.GetRasterBand(1).SetNoDataValue(255)
+    outdata.FlushCache()
+    print('Done.\n')
+
+    ds_mos = None
+    band = None
+    outdata = None
+
+    return A
 
 in_path = sys.argv[1]
 mask = sys.argv[2]
@@ -81,6 +138,16 @@ def raster2array(geotif_file):
 
     return array, metadata
 
+tif_path = '%s/S1_mos_%s.tif' % (out_path, out_title)
+out_path = '%s/ps_S1_mos_%s.tif' % (out_path, out_title)
+
+# Enhance contrast and save to tiff
+print('\nConverting to Byte...')
+gtiff_enhance(tif_path, out_path)
+os.remove(tif_path)
+print('Done.\n')
+
+'''
 data, metadata = raster2array('%s/S1_mos_%s.tif' % (out_path, out_title))
 
 
@@ -108,3 +175,5 @@ plot_array(data, metadata['extent'],
            title='S1 mosaic %s' % out_title,
            cmap_title=r'$\sigma_{0}$, dB',
            colormap='gray')
+
+'''
