@@ -188,10 +188,7 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
         # Clip data and rescale
         band = ds_wrap.GetRasterBand(1)
         arr = band.ReadAsArray()
-
         [rows, cols] = arr.shape
-
-        #better_contrast = exposure.rescale_intensity(arr_out)
 
         db_min = -35
         db_max = -5
@@ -204,7 +201,6 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
         #arr[arr > -5] = -5.
         #arr[arr < -35] = -35.
 
-
         print('\n@@@@@@@@@@ %s @@@@@@@@@@@\n' % np.nanmean(arr))
 
         arr[arr==0] = np.nan
@@ -212,25 +208,13 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
         # Rescale
         print('\nRescaling...')
         #arr_out = rescale_intensity(arr, out_range=(db_min, db_max)) #.astype(np.float32)
-        arr_out = scale_range(arr, -35, -5)
+
+        arr_out = np.clip(arr, db_min, db_max)
+        #arr_out = rescale_intensity(arr_out, out_range=(db_min, db_max)).astype(np.float32)
+
+        #arr_out = scale_range(arr, -35, -5)
         print('Rescaling done.')
 
-        # Reduce speckle
-        '''
-        print('\nApply median filter')
-        # lee_filter(arr_out, 3, var_noise=0.25) #
-        arr_out = median(arr_out, disk(3))
-        print('Done.\n')
-        '''
-
-        # Contrast enhacement
-        '''
-        print('\nContrast enhacement...')
-        arr_out = exposure.adjust_gamma(arr_out, 0.5)  #exposure.adjust_gamma(arr_out, 1.5)
-        print('Contrast enhacement done.')
-        '''
-
-        # Rescale again
 
         print('\nWriting geotiff...')
         driver = gdal.GetDriverByName('GTiff')
