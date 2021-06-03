@@ -136,10 +136,26 @@ def get_transformation(target):
     return ct
 
 def scale_range (input, min, max):
-    input += -(np.min(input))
-    input /= np.max(input) / (max - min)
-    input += min
+    idx = np.where(~np.isnan(input))
+    print(idx)
+    input[idx] += -(np.nanmin(input))
+    input[idx] /= np.nanmax(input) / (max - min)
+    input[idx] += min
     return input
+
+def lee_filter(band, window, var_noise=0.25):
+    # band: SAR data to be despeckled (already reshaped into image dimensions)
+    # window: descpeckling filter window (tuple)
+    # default noise variance = 0.25
+    # assumes noise mean = 0
+
+    mean_window = uniform_filter(band, window)
+    mean_sqr_window = uniform_filter(band ** 2, window)
+    var_window = mean_sqr_window - mean_window ** 2
+
+    weights = var_window / (var_window + var_noise)
+    band_filtered = mean_window + weights * (band - mean_window)
+    return band_filtered
 
 def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
     # 1) creating CoordinateTransformation:
@@ -166,7 +182,8 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
 
     if disk_output:
         print('\nRES: %s\n' % res)
-        ds_wrap = gdal.Warp('', copy_ds, format="MEM", dstSRS="EPSG:%s" % t_srs, xRes=res, yRes=res, multithread=True, callback=clb)
+        ds_wrap = gdal.Warp('', copy_ds, format="MEM", dstSRS="EPSG:%s" % t_srs,
+                            xRes=res, yRes=res, multithread=True, callback=clb)
 
         # Clip data and rescale
         band = ds_wrap.GetRasterBand(1)
@@ -176,46 +193,57 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
 
         #better_contrast = exposure.rescale_intensity(arr_out)
 
-        from_min = -35
-        from_max = -5
+        db_min = -35
+        db_max = -5
         to_max = 255
         to_min = 1
 
-        arr[np.isinf(arr)] = np.nan
-        #arr = np.clip(arr, from_min, from_max).astype(np.float32)
-        arr[arr > -5] = -5.
-        arr[arr < -35] = -35.
+        #arr[np.isinf(arr)] = np.nan
 
-        # Reduce speckle
-        print('\nApply median filter')
-        arr = median(arr, disk(3))
-        print('Done.\n')
+        #arr = np.clip(arr, from_min, from_max).astype(np.float32)
+        #arr[arr > -5] = -5.
+        #arr[arr < -35] = -35.
+
 
         print('\n@@@@@@@@@@ %s @@@@@@@@@@@\n' % np.nanmean(arr))
 
-        # Rescale
-        arr_out = rescale_intensity(arr, in_range=(np.nanmin(arr), np.nanmax(arr)),
-                                    out_range=(1, 255)).astype(np.uint8)
+        arr[arr==0] = np.nan
 
-        arr_out[np.isnan(arr_out)] = 255
-        arr_out[arr_out == 0] = 255
+        # Rescale
+        print('\nRescaling...')
+        #arr_out = rescale_intensity(arr, out_range=(db_min, db_max)) #.astype(np.float32)
+        arr_out = scale_range(arr, -35, -5)
+        print('Rescaling done.')
+
+        # Reduce speckle
+        '''
+        print('\nApply median filter')
+        # lee_filter(arr_out, 3, var_noise=0.25) #
+        arr_out = median(arr_out, disk(3))
+        print('Done.\n')
+        '''
 
         # Contrast enhacement
-        arr_out = exposure.adjust_gamma(arr_out, 1.5)
+        '''
+        print('\nContrast enhacement...')
+        arr_out = exposure.adjust_gamma(arr_out, 0.5)  #exposure.adjust_gamma(arr_out, 1.5)
+        print('Contrast enhacement done.')
+        '''
 
         # Rescale again
-        #arr_out[np.isnan(arr_out)] = 255
-        #arr_out[arr_out == 0] = 255
 
+        print('\nWriting geotiff...')
         driver = gdal.GetDriverByName('GTiff')
-        outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
+        outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Float32)
         outdata.SetGeoTransform(ds_wrap.GetGeoTransform())
         outdata.SetProjection(ds_wrap.GetProjection())
         outdata.GetRasterBand(1).WriteArray(arr_out)
-        outdata.GetRasterBand(1).SetNoDataValue(255)
+        #outdata.GetRasterBand(1).SetNoDataValue(0)
         outdata.FlushCache()
         outdata = None
         band = None
+
+        #print('Writing geotiff done.')
         #ds = None
 
         #out_ds = gdal.Translate(out_path, outdata, format='GTiff',
