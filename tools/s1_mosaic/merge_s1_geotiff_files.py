@@ -91,7 +91,7 @@ dts = []
 
 for i in range(days+1):
     td_yest = datetime.today() - timedelta(days=i)
-    dt_str_yest = '%s%02d%02dT' % (td_yest.year, td_yest.month, td_yest.day)
+    dt_str_yest = '%s%02d%02d' % (td_yest.year, td_yest.month, td_yest.day)
     dts.append(dt_str_yest)
 
 print(dts)
@@ -101,12 +101,11 @@ files_to_mosaic = []
 for root, dirs, files in os.walk(in_path):
     for fname in files:
         for idt in dts:
-            if fname.find(mask) >= 0 and fname.find(idt) >= 0:
+            if fname.find(mask) >= 0 and fname.find(idt) >= 0 and os.path.basename(root).find(idt) >= 0:
                 files_to_mosaic.append('%s/%s' % (root, fname))
 
 print(files_to_mosaic)
 
-#files_to_mosaic = glob.glob('%s/UPS*%s*.tif*' % (in_path, mask))
 files_to_mosaic.sort(key=lambda x: os.path.basename(x).split('_')[6])
 
 #files_string = (" ".join(files_to_mosaic))
@@ -125,10 +124,12 @@ out_path = '%s/ps_S1_mos_%s.tif' % (out_path, out_title)
 #command = "gdal_merge.py -ps 200. 200. -o %s/S1_mos_%s.tif -of gtiff %s" % (out_path, out_title, files_string)
 
 print('\nStart making mosaic from %s files...' % len(files_to_mosaic))
-g = gdal.Warp(tif_path, files_to_mosaic, format="GTiff", options=["COMPRESS=LZW", "TILED=YES"],
+# "COMPRESS=LZW"
+g = gdal.Warp(tif_path, files_to_mosaic, format="GTiff", options=["BIGTIFF=YES", "TILED=YES"],
               srcNodata=np.nan,
               dstNodata=-999.)
 print('Done.\n')
+g = None
 
 # Enhance contrast and save to tiff
 print('\nConverting to Byte...')
@@ -137,8 +138,6 @@ print('Done.\n')
 
 # Remove 'full' mosaic
 os.remove(tif_path)
-
-g = None
 
 '''
 
