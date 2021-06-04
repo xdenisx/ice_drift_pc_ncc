@@ -58,33 +58,41 @@ def findRasterIntersect(raster1, raster2):
 
     return array1, array2, col1, row1, intersection
 
-def chack_save_pair(f1, f2, id):
+def check_save_pair(f1, f2, id):
     image1_ds = gdal.Open(f1)
     image2_ds = gdal.Open(f2)
 
     gt = image1_ds.GetGeoTransform()
     pixel_area = abs(gt[1] / 1000. * gt[-5] / 1000.)  # [km]
-    image1_isect_array, image2_isect_array, col, row, isect_bb = findRasterIntersect(image1_ds, image2_ds)
-    intersect_area = pixel_area * col * row
 
-    print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' % (os.path.basename(f1), os.path.basename(f2), intersect_area))
+    try:
+        image1_isect_array, image2_isect_array, col, row, isect_bb = findRasterIntersect(image1_ds, image2_ds)
+        intersect_area = pixel_area * col * row
+        print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
+              (os.path.basename(f1), os.path.basename(f2), intersect_area))
 
-    # TODO: Save 1st geotiff
-    # diff_ds = driverTiff.Create('test_diff_array.tiff', col, row, 1, data_type) # NDVI so we'll use float values
-    # diff_ds.SetGeoTransform((isect_bb[0], image1_ds.GetGeoTransform()[1], 0, isect_bb[1], 0, image1_ds.GetGeoTransform()[5])) # origin_x, px_width,0,origin_y,0,px_height
-    # diff_ds.SetProjection(image1_ds.GetProjection()) # inherit the projection
+        # TODO: Save 1st geotiff
+        # diff_ds = driverTiff.Create('test_diff_array.tiff', col, row, 1, data_type) # NDVI so we'll use float values
+        # diff_ds.SetGeoTransform((isect_bb[0], image1_ds.GetGeoTransform()[1], 0, isect_bb[1], 0, image1_ds.GetGeoTransform()[5])) # origin_x, px_width,0,origin_y,0,px_height
+        # diff_ds.SetProjection(image1_ds.GetProjection()) # inherit the projection
 
-    if intersect_area > 100000:
-        print('\n### Start making pair... ###')
-        # Create dir for a pir
-        try:
-            os.makedirs('%s/%02d' % (out_path, id))
-        except:
-            pass
-        adjuster = RasterAdjuster(f1, f2)
-        adjuster.export(raster1_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f1)),
-                        raster2_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f2)))
-        id = id + 1
+        if intersect_area > 100000:
+            print('\n### Start making pair... ###')
+            # Create dir for a pir
+            try:
+                os.makedirs('%s/%02d' % (out_path, id))
+            except:
+                pass
+
+            print('\nStart adjusment...')
+            adjuster = RasterAdjuster(f1, f2)
+            adjuster.export(raster1_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f1)),
+                            raster2_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f2)),
+                            mask_export_path='%s/%02d/mask_%s' % (out_path, id, os.path.basename(f1)))
+            print('Adjusment done.\n')
+            id = id + 1
+    except:
+        pass
 
     del image1_ds
     del image2_ds
@@ -100,13 +108,14 @@ try:
 except:
     pass
 
-polarization = 'HH'
+polarization = 'hh'
 id_pair = 0
 
 for root, d_names, f_names in os.walk(in_path):
-    f_names.sort()
+    #f_names.sort()
+    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6])
     for f_name in f_names:
-        if f_name.endswith('tiff') and f_name.find(polarization)>0:
+        if f_name.endswith('tiff') and f_name.find(polarization) > 0:
             ifile = '%s/%s' % (root, f_name)
 
             print('\n### %s ###\n' % os.path.basename(ifile))
@@ -137,7 +146,7 @@ for root, d_names, f_names in os.walk(in_path):
                             print('\nPair %02d' % id_pair)
                             print('\nf1: %s' % os.path.basename(f_name))
                             print('f2: %s\n' % os.path.basename(dt2_file))
-                            id_pair = chack_save_pair(ifile, dt2_file, id_pair)
+                            id_pair = check_save_pair(ifile, dt2_file, id_pair)
 
 
                 '''

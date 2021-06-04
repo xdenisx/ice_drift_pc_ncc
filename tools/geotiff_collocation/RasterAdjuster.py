@@ -12,6 +12,9 @@ Last modification: 2017-08-03
 import gdal, ogr
 import json, os
 
+import numpy as np
+
+
 class RasterAdjuster():
     
     def __init__(self,raster1_path,raster2_path):
@@ -64,14 +67,15 @@ class RasterAdjuster():
     def get_raster2_as_array(self,band_number=1):
         return self.raster2.GetRasterBand(band_number).ReadAsArray()
         
-    def export(self,raster1_export_path=None, raster2_export_path=None):
+    def export(self,raster1_export_path=None, raster2_export_path=None, mask_export_path=None):
         if not raster1_export_path:
             raster1_export_path = self.__update_path(self.__raster1_path)
         if not raster2_export_path:
             raster2_export_path = self.__update_path(self.__raster2_path)
             
-        self.__save_raster_to_gtiff(self.raster1,raster1_export_path)
-        self.__save_raster_to_gtiff(self.raster2,raster2_export_path)
+        self.__save_raster_to_gtiff(self.raster1, raster1_export_path)
+        self.__save_raster_to_gtiff(self.raster2, raster2_export_path)
+        self.__save_mask_to_gtiff(self.raster1, self.raster2, mask_export_path)
     
     '''Service functions'''
         
@@ -167,4 +171,28 @@ class RasterAdjuster():
         while i<= raster.RasterCount:
             dataset.GetRasterBand(i).WriteArray(raster.GetRasterBand(i).ReadAsArray())
             i+=1
-        del dataset    
+        del dataset
+
+    def __save_mask_to_gtiff(self, raster1, raster2, gtiff_path):
+        driver = gdal.GetDriverByName("GTiff")
+        dataType = gdal.GDT_Byte
+
+        dataset = driver.Create(gtiff_path, raster1.RasterXSize, raster1.RasterYSize, raster1.RasterCount, dataType)
+        dataset.SetProjection(raster1.GetProjection())
+        dataset.SetGeoTransform(raster1.GetGeoTransform())
+
+        i = 1
+        arr1 = raster1.GetRasterBand(i).ReadAsArray()
+        arr2 = raster2.GetRasterBand(i).ReadAsArray()
+
+        mask_array = np.copy(arr1)
+        mask_array[:, :] = 1
+        mask_array[np.isnan(arr1)] = 0
+        mask_array[np.isnan(arr2)] = 0
+
+        print(mask_array)
+
+        while i <= raster1.RasterCount:
+            dataset.GetRasterBand(i).WriteArray(mask_array)
+            i += 1
+        del dataset
