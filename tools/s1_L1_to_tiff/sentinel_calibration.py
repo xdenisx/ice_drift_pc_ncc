@@ -157,7 +157,7 @@ def lee_filter(band, window, var_noise=0.25):
     band_filtered = mean_window + weights * (band - mean_window)
     return band_filtered
 
-def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
+def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
     # 1) creating CoordinateTransformation:
     target = osr.SpatialReference()
     target.ImportFromEPSG(t_srs)
@@ -188,6 +188,8 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
         # Clip data and rescale
         band = ds_wrap.GetRasterBand(1)
         arr = band.ReadAsArray()
+        arr[np.isinf(arr)] = np.nan
+
         [rows, cols] = arr.shape
 
         db_min = -35
@@ -203,16 +205,27 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
 
         print('\n@@@@@@@@@@ %s @@@@@@@@@@@\n' % np.nanmean(arr))
 
-        arr[arr==0] = np.nan
+        arr[arr == 0] = np.nan
+
+        # Save mask with nan values
+        if mask:
+            out_path_mask = '%s/mask_%s' % (os.path.dirname(out_path), os.path.basename(out_path))
+            print('\nWriting geotiff with NaN mask %s ...' % out_path_mask)
+            driver = gdal.GetDriverByName('GTiff')
+            outdata = driver.Create(out_path_mask, cols, rows, 1, gdal.GDT_Byte)
+            outdata.SetGeoTransform(ds_wrap.GetGeoTransform())
+            outdata.SetProjection(ds_wrap.GetProjection())
+            arr_mask = np.copy(arr)
+            arr_mask[~np.isnan(arr)] = 1
+            arr_mask[np.isnan(arr)] = 0
+            outdata.GetRasterBand(1).WriteArray(arr_mask)
+            # outdata.GetRasterBand(1).SetNoDataValue(0)
+            outdata.FlushCache()
+            outdata = None
 
         # Rescale
         print('\nRescaling...')
-        #arr_out = rescale_intensity(arr, out_range=(db_min, db_max)) #.astype(np.float32)
-
         arr_out = np.clip(arr, db_min, db_max)
-        #arr_out = rescale_intensity(arr_out, out_range=(db_min, db_max)).astype(np.float32)
-
-        #arr_out = scale_range(arr, -35, -5)
         print('Rescaling done.')
 
 
@@ -224,6 +237,7 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False):
         outdata.GetRasterBand(1).WriteArray(arr_out)
         #outdata.GetRasterBand(1).SetNoDataValue(0)
         outdata.FlushCache()
+
         outdata = None
         band = None
 
