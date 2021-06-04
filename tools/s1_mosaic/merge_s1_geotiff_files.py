@@ -11,6 +11,8 @@ import matplotlib.ticker as ticker
 import scipy.ndimage.filters
 from skimage.morphology import disk
 from skimage.filters import median
+from datetime import datetime, timedelta
+from skimage import exposure
 
 def gtiff_enhance(tif_path, out_path):
     # Open mosaic
@@ -27,7 +29,7 @@ def gtiff_enhance(tif_path, out_path):
     ###################################
     # Map values to the (0, 255) range:
 
-    A0 = (A0 - np.nanmin(A0)) * 255.0 / (np.nanmax(A0) - np.nanmin(A0))
+    A0 = (A0 - np.nanmin(A0)) * 254.0 / (np.nanmax(A0) - np.nanmin(A0))
 
     # Kernel for negative Laplacian:
     kernel = np.ones((3, 3)) * (-1)
@@ -37,7 +39,7 @@ def gtiff_enhance(tif_path, out_path):
     Lap = scipy.ndimage.filters.convolve(A0, kernel)
 
     # Map Laplacian to some new range:
-    ShF = 200  # Sharpening factor!
+    ShF = 100  # Sharpening factor!
     Laps = Lap * ShF / np.nanmax(Lap)
 
     # Add negative Laplacian to the original image:
@@ -48,9 +50,15 @@ def gtiff_enhance(tif_path, out_path):
     # END contrast enhance
     ###################################
 
-    print('\nWriting geotiff...')
+    #print('\nWriting geotiff...')
     #A = median(A, disk(3))
+
+    # Contrast stretching
+    p2, p98 = np.nanpercentile(A, (2, 98))
+    A = exposure.rescale_intensity(A, in_range=(p2, p98), out_range=(0, 254))
+
     A[np.isnan(A)] = 255
+
     driver = gdal.GetDriverByName('GTiff')
     outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
     outdata.SetGeoTransform(ds_mos.GetGeoTransform())
@@ -58,7 +66,7 @@ def gtiff_enhance(tif_path, out_path):
     outdata.GetRasterBand(1).WriteArray(A)
     outdata.GetRasterBand(1).SetNoDataValue(255)
     outdata.FlushCache()
-    print('Done.\n')
+    #print('Done.\n')
 
     ds_mos = None
     band = None
@@ -75,22 +83,64 @@ try:
 except:
     pass
 
-files_to_mosaic = glob.glob('%s/UPS*%s*.tif*' % (in_path, mask))
+td = datetime.today()
+days = 1
+dts = []
+#dt_td_str = '%s%02d%02dT' % (td.year, td.month, td.day)
+#dts.append(dt_td_str)
+
+for i in range(days+1):
+    td_yest = datetime.today() - timedelta(days=i)
+    dt_str_yest = '%s%02d%02dT' % (td_yest.year, td_yest.month, td_yest.day)
+    dts.append(dt_str_yest)
+
+print(dts)
+
+# Find files for 2 days
+files_to_mosaic = []
+for root, dirs, files in os.walk(in_path):
+    for fname in files:
+        for idt in dts:
+            if fname.find(mask) >= 0 and fname.find(idt) >= 0:
+                files_to_mosaic.append('%s/%s' % (root, fname))
+
+print(files_to_mosaic)
+
+#files_to_mosaic = glob.glob('%s/UPS*%s*.tif*' % (in_path, mask))
 files_to_mosaic.sort(key=lambda x: os.path.basename(x).split('_')[6])
-files_string = (" ".join(files_to_mosaic))
 
-print(files_string)
+#files_string = (" ".join(files_to_mosaic))
+#print(files_string)
 
-out_title = '%s_%s' % (os.path.basename(files_to_mosaic[0]).split('_')[6], os.path.basename(files_to_mosaic[-1]).split('_')[6])
+# Out filename
+out_title = '%s_%s' % (os.path.basename(files_to_mosaic[0]).split('_')[6],
+                       os.path.basename(files_to_mosaic[-1]).split('_')[6])
+
+# Path to 'full' tiff mosaic
+tif_path = '%s/S1_mos_%s.tif' % (out_path, out_title)
+
+# Path to Byte tiff mosaic
+out_path = '%s/ps_S1_mos_%s.tif' % (out_path, out_title)
 
 #command = "gdal_merge.py -ps 200. 200. -o %s/S1_mos_%s.tif -of gtiff %s" % (out_path, out_title, files_string)
 
-print('\nStart making mosaic...')
-g = gdal.Warp('%s/S1_mos_%s.tif' % (out_path, out_title), files_to_mosaic, format="GTiff", options=["COMPRESS=LZW", "TILED=YES"],
+print('\nStart making mosaic from %s files...' % len(files_to_mosaic))
+g = gdal.Warp(tif_path, files_to_mosaic, format="GTiff", options=["COMPRESS=LZW", "TILED=YES"],
               srcNodata=np.nan,
               dstNodata=-999.)
-g = None
 print('Done.\n')
+
+# Enhance contrast and save to tiff
+print('\nConverting to Byte...')
+gtiff_enhance(tif_path, out_path)
+print('Done.\n')
+
+# Remove 'full' mosaic
+os.remove(tif_path)
+
+g = None
+
+'''
 
 def raster2array(geotif_file):
     metadata = {}
@@ -137,17 +187,7 @@ def raster2array(geotif_file):
             array[..., i-1] = band
 
     return array, metadata
-
-tif_path = '%s/S1_mos_%s.tif' % (out_path, out_title)
-out_path = '%s/ps_S1_mos_%s.tif' % (out_path, out_title)
-
-# Enhance contrast and save to tiff
-print('\nConverting to Byte...')
-gtiff_enhance(tif_path, out_path)
-os.remove(tif_path)
-print('Done.\n')
-
-'''
+    
 data, metadata = raster2array('%s/S1_mos_%s.tif' % (out_path, out_title))
 
 

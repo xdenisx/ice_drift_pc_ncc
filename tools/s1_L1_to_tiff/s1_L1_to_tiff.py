@@ -6,6 +6,7 @@ import glob
 from os.path import expanduser
 from pathlib import Path
 import shutil
+import numpy as np
 
 home = expanduser("~")
 
