@@ -13,6 +13,7 @@ from skimage.morphology import disk
 from skimage.filters import median
 from datetime import datetime, timedelta
 from skimage import exposure
+import re
 
 def gtiff_enhance(tif_path, out_path):
     # Open mosaic
@@ -33,13 +34,13 @@ def gtiff_enhance(tif_path, out_path):
 
     # Kernel for negative Laplacian:
     kernel = np.ones((3, 3)) * (-1)
-    kernel[1, 1] = 6
+    kernel[1, 1] = 5
 
     # Convolution of the image with the kernel:
     Lap = scipy.ndimage.filters.convolve(A0, kernel)
 
     # Map Laplacian to some new range:
-    ShF = 100  # Sharpening factor!
+    ShF = 50  # Sharpening factor!
     Laps = Lap * ShF / np.nanmax(Lap)
 
     # Add negative Laplacian to the original image:
@@ -56,6 +57,13 @@ def gtiff_enhance(tif_path, out_path):
     # Contrast stretching
     p2, p98 = np.nanpercentile(A, (2, 98))
     A = exposure.rescale_intensity(A, in_range=(p2, p98), out_range=(0, 254))
+
+    # Gamma correction
+    #A = exposure.adjust_gamma(A, 0.7)
+
+    # Rescale again
+    #p2, p98 = np.nanpercentile(A, (2, 98))
+    #A = exposure.rescale_intensity(A, in_range=(p2, p98), out_range=(0, 254))
 
     A[np.isnan(A)] = 255
 
@@ -85,23 +93,22 @@ except:
 
 td = datetime.today()
 days = 1
-dts = []
-#dt_td_str = '%s%02d%02dT' % (td.year, td.month, td.day)
-#dts.append(dt_td_str)
 
-for i in range(days+1):
-    td_yest = datetime.today() - timedelta(days=i)
-    dt_str_yest = '%s%02d%02d' % (td_yest.year, td_yest.month, td_yest.day)
-    dts.append(dt_str_yest)
+dt_2 = datetime.today()
+dt_1 = datetime.today() - timedelta(days=days)
 
-print(dts)
-
-# Find files for 2 days
+# Find files within i days time gap
 files_to_mosaic = []
 for root, dirs, files in os.walk(in_path):
     for fname in files:
-        for idt in dts:
-            if fname.find(mask) >= 0 and fname.find(idt) >= 0 and os.path.basename(root).find(idt) >= 0:
+        if fname.endswith('tiff'):
+            m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', fname)[0]
+            dt_f = datetime.strptime(('%s/%s/%sT%s:%s:%s' %
+                                     (m[0:4], m[4:6], m[6:8], m[9:11], m[11:13], m[13:15])),
+                                    '%Y/%m/%dT%H:%M:%S')
+
+            if fname.find(mask) >= 0 and dt_f >= dt_1 and dt_f <= dt_2:
+                print('%s added!' % fname)
                 files_to_mosaic.append('%s/%s' % (root, fname))
 
 print(files_to_mosaic)
@@ -112,8 +119,12 @@ files_to_mosaic.sort(key=lambda x: os.path.basename(x).split('_')[6])
 #print(files_string)
 
 # Out filename
+'''
 out_title = '%s_%s' % (os.path.basename(files_to_mosaic[0]).split('_')[6],
                        os.path.basename(files_to_mosaic[-1]).split('_')[6])
+'''
+
+out_title = '%s' % os.path.basename(files_to_mosaic[-1]).split('_')[6][0:8]
 
 # Path to 'full' tiff mosaic
 tif_path = '%s/S1_mos_%s.tif' % (out_path, out_title)
@@ -133,6 +144,12 @@ g = None
 
 # Enhance contrast and save to tiff
 print('\nConverting to Byte...')
+# Delete old files
+try:
+    os.remove(out_path)
+except:
+    pass
+
 gtiff_enhance(tif_path, out_path)
 print('Done.\n')
 
