@@ -5,11 +5,14 @@ import sys
 import glob
 from os.path import expanduser
 import shutil
+import math
 
 home = expanduser("~")
 
 in_path = sys.argv[1]
 out_path = sys.argv[2]
+# date in output file path
+f_date_in_path = sys.argv[3]
 
 reproject = True
 
@@ -18,16 +21,14 @@ polarizations = [x.lower() for x in polarizations]
 
 # GRD resolutions
 resolution = {}
-resolution['GRDM'] = 100.
-resolution['GRDH'] = 20.
+tiff_res = math.ceil(sys.argv[4])
+resolution['GRDM'] = tiff_res
+resolution['GRDH'] = math.ceil(tiff_res/2)
 
 proj_epsg = 32661
 
 # no data mask
 f_mask = False
-
-# date in output file path
-f_date_in_path = False
 
 print('\nTarget polarizations: %s\n' % polarizations)
 
