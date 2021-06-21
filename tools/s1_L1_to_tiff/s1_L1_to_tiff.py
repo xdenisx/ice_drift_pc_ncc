@@ -21,7 +21,7 @@ polarizations = [x.lower() for x in polarizations]
 
 # GRD resolutions
 resolution = {}
-tiff_res = math.ceil(sys.argv[4])
+tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
 resolution['GRDH'] = math.ceil(tiff_res/2)
 
