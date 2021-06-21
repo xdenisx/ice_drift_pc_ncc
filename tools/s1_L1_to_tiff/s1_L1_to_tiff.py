@@ -52,7 +52,7 @@ for root, d_names, f_names in os.walk(in_path):
         # Check projected tiff file exist
         m = re.findall(r'\d\d\d\d\d\d\d\dT', f_name[:-4])[0][:-1]
 
-        if f_date_in_path:
+        if f_date_in_path == 1:
             out_tiff_name = '%s/%s/UPS_%s_%s.tiff' % (out_path, m, polarizations[0], f_name[:-4])
         else:
             out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
@@ -85,7 +85,7 @@ for root, d_names, f_names in os.walk(in_path):
                     m = re.findall(r'\d\d\d\d\d\d\d\dT', tmp_fname)[0][:-1]
                     os.makedirs('%s' % out_path, exist_ok=True)
 
-                    if f_date_in_path:
+                    if f_date_in_path == 1:
                         out_calib_name = '%s/%s/_%s_%s.tiff' % (out_path, m, pol, tmp_fname)
                     else:
                         out_calib_name = '%s/_%s_%s.tiff' % (out_path, pol, tmp_fname)
