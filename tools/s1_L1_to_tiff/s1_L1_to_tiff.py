@@ -18,8 +18,10 @@ polarizations = [x.lower() for x in polarizations]
 
 # GRD resolutions
 resolution = {}
-resolution['GRDM'] = 200.
+resolution['GRDM'] = 100.
 resolution['GRDH'] = 20.
+
+proj_epsg = 32661
 
 print('\nTarget polarizations: %s\n' % polarizations)
 
@@ -34,6 +36,7 @@ if not os.path.exists(out_path):
 
 for root, d_names, f_names in os.walk(in_path):
     print(root, d_names, f_names)
+    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6])
     for f_name in f_names:
         #if f_name == f_names[0]: #'20210511' in f_name:
         ifile = '%s/%s' % (root, f_name)
@@ -41,7 +44,7 @@ for root, d_names, f_names in os.walk(in_path):
 
         # Check projected tiff file exist
         m = re.findall(r'\d\d\d\d\d\d\d\dT', f_name[:-4])[0][:-1]
-        out_tiff_name = '%s/%s/UPS_%s_%s.tiff' % (out_path, m, polarizations[0], f_name[:-4])
+        out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
 
         if not os.path.isfile(out_tiff_name) and 'EW' in f_name:
             # Unzip
@@ -69,9 +72,9 @@ for root, d_names, f_names in os.walk(in_path):
                     calib_fname = glob.glob('%s/annotation/calibration/calibration*%s*.xml' % (path_to_safe_file, pol))[0]
                     tmp_fname = os.path.basename(ifile)[:-4]
                     m = re.findall(r'\d\d\d\d\d\d\d\dT', tmp_fname)[0][:-1]
-                    os.makedirs('%s/%s' % (out_path, m), exist_ok=True)
+                    os.makedirs('%s' % out_path, exist_ok=True)
 
-                    out_calib_name = '%s/%s/_%s_%s.tiff' % (out_path, m, pol, tmp_fname)
+                    out_calib_name = '%s/_%s_%s.tiff' % (out_path, pol, tmp_fname)
 
                     # Calibration
                     perform_radiometric_calibration(pol_file, calib_fname, out_calib_name)
@@ -80,13 +83,13 @@ for root, d_names, f_names in os.walk(in_path):
                         print('\nReptojecting...')
                         if 'GRDM' in out_tiff_name:
                             res = resolution['GRDM']
-                            reproject_ps(out_calib_name, out_tiff_name, 3995, res, disk_output=True,
-                                         mask=False)
+                            reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
+                                         mask=True)
 
                         elif 'GRDH' in out_tiff_name:
                             res = resolution['GRDH']
-                            reproject_ps(out_calib_name, out_tiff_name, 3995, res, disk_output=True,
-                                         mask=False)
+                            reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
+                                         mask=True)
 
                         # Delete calibrated unprojected tiff
                         try:

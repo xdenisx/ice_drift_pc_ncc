@@ -2,9 +2,7 @@ import gdal
 import sys
 import os
 import numpy as np
-from osgeo import gdal_array
 from RasterAdjuster import RasterAdjuster
-import glob
 import re
 from datetime import datetime, timedelta
 
@@ -71,11 +69,6 @@ def check_save_pair(f1, f2, id):
         print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
               (os.path.basename(f1), os.path.basename(f2), intersect_area))
 
-        # TODO: Save 1st geotiff
-        # diff_ds = driverTiff.Create('test_diff_array.tiff', col, row, 1, data_type) # NDVI so we'll use float values
-        # diff_ds.SetGeoTransform((isect_bb[0], image1_ds.GetGeoTransform()[1], 0, isect_bb[1], 0, image1_ds.GetGeoTransform()[5])) # origin_x, px_width,0,origin_y,0,px_height
-        # diff_ds.SetProjection(image1_ds.GetProjection()) # inherit the projection
-
         if intersect_area > 100000:
             print('\n### Start making pair... ###')
             # Create dir for a pir
@@ -109,13 +102,14 @@ except:
     pass
 
 polarization = 'hh'
+files_pref = 'UPS'
 id_pair = 0
 
 for root, d_names, f_names in os.walk(in_path):
     #f_names.sort()
     f_names.sort(key=lambda x: os.path.basename(x).split('_')[6])
     for f_name in f_names:
-        if f_name.endswith('tiff') and f_name.find(polarization) > 0:
+        if f_name.startswith(files_pref) and f_name.endswith('tiff') and f_name.find(polarization) > 0:
             ifile = '%s/%s' % (root, f_name)
 
             print('\n### %s ###\n' % os.path.basename(ifile))
@@ -127,54 +121,34 @@ for root, d_names, f_names in os.walk(in_path):
                                                  date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
                 dt1 = datetime.strptime(dt1_str, '%Y/%m/%dT%H:%M:%S')
 
-                dt2 = dt1 + timedelta(days=days_lag)
-                dt2_str = dt2.strftime("%Y%m%dT")
+                # Time lag days ago
+                dt2 = dt1 - timedelta(days=days_lag)
 
-                td = dt2 - dt1
-                td_days = td.days
+                for i in range(1, int(days_lag)+1, 1):
 
-                for i in range(1, td_days+1, 1):
-
-                    dt2_i = dt1 + timedelta(days=i)
-                    dt2_i_str = dt2_i.strftime("%Y%m%dT")
+                    dt2_i = dt1 - timedelta(days=i)
 
                     # try to find files within i days
-                    dt2_i_files = glob.glob('%s/*%s*%s*' % (in_path, polarization, dt2_i_str))
+                    for root2, d_names2, f_names2 in os.walk(in_path):
+                        # f_names.sort()
+                        f_names2.sort(key=lambda x: os.path.basename(x).split('_')[6])
+                        for f_name2 in f_names2:
+                            if f_name2.startswith(files_pref) and f_name2.endswith('tiff') and f_name2.find(
+                                    polarization) > 0:
+                                ifile2 = '%s/%s' % (root2, f_name2)
 
-                    if not dt2_i_files is None:
-                        for dt2_file in dt2_i_files:
-                            print('\nPair %02d' % id_pair)
-                            print('\nf1: %s' % os.path.basename(f_name))
-                            print('f2: %s\n' % os.path.basename(dt2_file))
-                            id_pair = check_save_pair(ifile, dt2_file, id_pair)
+                                print('\n### %s ###\n' % os.path.basename(ifile2))
 
+                                date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
 
-                '''
-                # Create dir for a pir
-                try:
-                    os.makedirs('%s/%02d' % (out_path, id_pair))
-                except:
-                    pass
-        
-        
-                image1_ds = gdal.Open(f1)
-                image2_ds = gdal.Open(f2)
-        
-                gt = image1_ds.GetGeoTransform()
-                pixel_area = abs(gt[1]/ 1000.*gt[-5]/ 1000.) # [km]
-                image1_isect_array, image2_isect_array, col, row, isect_bb = findRasterIntersect(image1_ds, image2_ds)
-                intersect_area = pixel_area*col*row
-        
-                print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' % (os.path.basename(f1), os.path.basename(f2), intersect_area))
-        
-                # TODO: Save 1st geotiff
-                #diff_ds = driverTiff.Create('test_diff_array.tiff', col, row, 1, data_type) # NDVI so we'll use float values
-                #diff_ds.SetGeoTransform((isect_bb[0], image1_ds.GetGeoTransform()[1], 0, isect_bb[1], 0, image1_ds.GetGeoTransform()[5])) # origin_x, px_width,0,origin_y,0,px_height
-                #diff_ds.SetProjection(image1_ds.GetProjection()) # inherit the projection
-        
-                if intersect_area > 100000:
-                    adjuster = RasterAdjuster(f1, f2)
-                    adjuster.export(raster1_export_path='%s/%s/%s' % (out_path, id_pair, os.path.basename(f1)),
-                                    raster2_export_path='%s/%s/%s' % (out_path, id_pair, os.path.basename(f2)))
-                    id_pair = id_pair + 1
-                '''
+                                dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
+                                                                 date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
+                                dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
+
+                                # If the i date within current time gap
+                                if dt_i >= dt2 and dt_i < dt1:
+                                    print('\nf1: %s' % os.path.basename(f_name))
+                                    print('f2: %s\n' % os.path.basename(f_name2))
+                                    print('\nMaking pair %02d ...' % id_pair)
+                                    id_pair = check_save_pair(ifile, ifile2, id_pair)
+                                    print('Done.\n')
