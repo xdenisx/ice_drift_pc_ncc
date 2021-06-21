@@ -227,11 +227,13 @@ def gtiff_enhance(tif_path, out_path):
 
     return A
 
+# Input parameters
 in_path = sys.argv[1]
 mask = sys.argv[2]
 out_path = sys.argv[3]
 # Time gap
 days = int(sys.argv[4])
+dstSRS = '+proj=laea +lat_0=90 +lon_0=90 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
 
 try:
     os.makedirs(out_path)
@@ -306,7 +308,7 @@ for idate in unq_dates[1:]:
 
         g = gdal.Warp(tif_path, files_to_mosaic, format="GTiff", options=["BIGTIFF=YES", "TILED=YES"],
                       xRes=300., yRes=300.,
-                      dstSRS='EPSG:3995',
+                      dstSRS=dstSRS,
                       srcNodata=np.nan,
                       dstNodata=-999.)
         print('Done.\n')

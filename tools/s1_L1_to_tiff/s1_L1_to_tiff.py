@@ -23,6 +23,12 @@ resolution['GRDH'] = 20.
 
 proj_epsg = 32661
 
+# no data mask
+f_mask = False
+
+# date in output file path
+f_date_in_path = False
+
 print('\nTarget polarizations: %s\n' % polarizations)
 
 # Try to make temp dir
@@ -44,7 +50,11 @@ for root, d_names, f_names in os.walk(in_path):
 
         # Check projected tiff file exist
         m = re.findall(r'\d\d\d\d\d\d\d\dT', f_name[:-4])[0][:-1]
-        out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
+
+        if f_date_in_path:
+            out_tiff_name = '%s/%s/UPS_%s_%s.tiff' % (out_path, m, polarizations[0], f_name[:-4])
+        else:
+            out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
 
         if not os.path.isfile(out_tiff_name) and 'EW' in f_name:
             # Unzip
@@ -74,7 +84,10 @@ for root, d_names, f_names in os.walk(in_path):
                     m = re.findall(r'\d\d\d\d\d\d\d\dT', tmp_fname)[0][:-1]
                     os.makedirs('%s' % out_path, exist_ok=True)
 
-                    out_calib_name = '%s/_%s_%s.tiff' % (out_path, pol, tmp_fname)
+                    if f_date_in_path:
+                        out_calib_name = '%s/%s/_%s_%s.tiff' % (out_path, m, pol, tmp_fname)
+                    else:
+                        out_calib_name = '%s/_%s_%s.tiff' % (out_path, pol, tmp_fname)
 
                     # Calibration
                     perform_radiometric_calibration(pol_file, calib_fname, out_calib_name)
@@ -84,12 +97,12 @@ for root, d_names, f_names in os.walk(in_path):
                         if 'GRDM' in out_tiff_name:
                             res = resolution['GRDM']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=True)
+                                         mask=f_mask)
 
                         elif 'GRDH' in out_tiff_name:
                             res = resolution['GRDH']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=True)
+                                         mask=f_mask)
 
                         # Delete calibrated unprojected tiff
                         try:
