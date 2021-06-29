@@ -227,9 +227,11 @@ def gtiff_enhance(tif_path, out_path):
 
     return A
 
-in_path = sys.argv[1]
-mask = sys.argv[2]
-out_path = sys.argv[3]
+
+days = int(sys.argv[1])
+in_path = sys.argv[2]
+mask = sys.argv[3]
+out_path = sys.argv[4]
 dstSRS = '+proj=laea +lat_0=90 +lon_0=90 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
 
 try:
@@ -238,8 +240,6 @@ except:
     pass
 
 td = datetime.today()
-days = 2
-
 dt_2 = datetime.today()
 dt_1 = datetime.today() - timedelta(days=days)
 
@@ -276,7 +276,7 @@ out_title = '%s' % os.path.basename(files_to_mosaic[0]).split('_')[6][0:8]
 tif_path = '%s/S1_mos_%s.tif' % (out_path, out_title)
 
 # Path to Byte tiff mosaic
-out_path = '%s/ps_S1_mos_%s.tif' % (out_path, out_title)
+out_path = '%s/ps_S1_mos_%sd_%s.tif' % (out_path, days, out_title)
 
 #command = "gdal_merge.py -ps 200. 200. -o %s/S1_mos_%s.tif -of gtiff %s" % (out_path, out_title, files_string)
 
