@@ -69,9 +69,7 @@ class CalcDriftFilter(object):
 		land_data = land_mask.GetRasterBand(1).ReadAsArray()
 
 		# Get throughout vector list and filter which over land
-		print(self.xxx_f[:])
 		for i in range(len(self.xxx_f[:])):
-			print(self.xxx_f[i], self.yyy_f[i])
 			c, r = int(self.xxx_f[i]), int(self.yyy_f[i])
 			if land_data[r, c] == 255:
 				self.xxx_f[i] = np.NaN
