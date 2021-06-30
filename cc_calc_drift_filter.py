@@ -1,9 +1,83 @@
 import numpy as np
 from sklearn.neighbors import KDTree
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+from shapely.geometry import shape
+from osgeo import gdal, osr, ogr
+import shapefile
 
 class CalcDriftFilter(object):
 	def __init__(self, Conf):
 		self.Conf = Conf
+
+	def get_gdal_dataset_extent(gdal_dataset):
+		x_size = gdal_dataset.RasterXSize
+		y_size = gdal_dataset.RasterYSize
+		geotransform = gdal_dataset.GetGeoTransform()
+		x_min = geotransform[0]
+		y_max = geotransform[3]
+		x_max = x_min + x_size * geotransform[1]
+		y_min = y_max + y_size * geotransform[5]
+		return {'xMin': x_min, 'xMax': x_max, 'yMin': y_min, 'yMax': y_max, 'xRes': geotransform[1],
+				'yRes': geotransform[5]}
+
+	def filter_land(self):
+		''' Filtering of vectors over Land areas
+		based on OSM data
+		'''
+
+		ds_tiff = gdal.Open(self.Conf.f1_name)
+		source_geotransform = ds_tiff.GetGeoTransform()
+		source_projection = ds_tiff.GetProjection()
+		source_extent = get_gdal_dataset_extent(ds_tiff)
+
+		# geotransform = gdal_dataset.GetGeoTransform()
+		if source_geotransform == (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+			# gdal_dataset = gdal.Warp('',gdal_dataset, format='MEM')
+			# print gdal_dataset.RasterXSize
+			# geotransform = gdal_dataset.GetGeoTransform()
+			# if geotransform == (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+			print('Error: GDAL dataset without georeferencing')
+
+		print('Calculating land mask')
+		print('Recalculate raster to WGS84')
+		ds_tiff = gdal.Warp('', ds_tiff, dstSRS='+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs', format='MEM')
+		print('Extracting WGS84 extent')
+		extent = get_gdal_dataset_extent(ds_tiff)
+
+		print('Clipping and Rasterizing land mask to raster extent')
+		# format='MEM',
+		land_mask = gdal.Rasterize('',
+								   '/home/denis/git/ice_drift_pc_ncc/data/land-polygons-complete-4326/arctic_land.shp',
+								   format='MEM',
+								   outputBounds=[extent['xMin'], extent['yMin'],
+												 extent['xMax'], extent['yMax']],
+								   xRes=extent['xRes'], yRes=extent['yRes'])
+		# format='MEM',
+		land_mask = gdal.Warp('', land_mask, format='MEM', dstSRS=source_projection,
+							  xRes=source_extent['xRes'], yRes=source_extent['yRes'],
+							  outputBounds=[source_extent['xMin'], source_extent['yMin'],
+											source_extent['xMax'], source_extent['yMax']])
+
+		old_cs = osr.SpatialReference()
+		old_cs.ImportFromWkt(ds_tiff.GetProjection())
+
+		new_cs = osr.SpatialReference()
+		new_cs.ImportFromProj4('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+
+		transform = osr.CoordinateTransformation(old_cs, new_cs)
+
+		# Get throughout vector list and filter which over land
+		for i in range(len(self.xxx_f)):
+			if land_mask[self.xxx_f[i], self.yyy_f[i]] == 255:
+				self.xxx_f[i] = np.NaN
+				self.yyy_f[i] = np.NaN
+				self.uuu_f[i] = np.NaN
+				self.vvv_f[i] = np.NaN
+				self.ccc_f[i] = np.NaN
+
+		del ds_tiff
+		del land_mask
 
 	# Filter outliers
 	def filter_outliers(self, drift_results):
