@@ -47,7 +47,7 @@ class CalcDriftFilter(object):
 
 		print('Clipping and Rasterizing land mask to raster extent')
 		# format='MEM',
-		land_mask_wgs84 = gdal.Rasterize('', '/Home/denemc/git/ice_drift_pc_ncc/data/arctic_land.shp',
+		land_mask_wgs84 = gdal.Rasterize('', 'data/ne_10m_land.shp',
 								   format='MEM',
 								   outputBounds=[extent['xMin'], extent['yMin'],
 												 extent['xMax'], extent['yMax']],
