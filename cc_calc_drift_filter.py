@@ -10,7 +10,7 @@ class CalcDriftFilter(object):
 	def __init__(self, Conf):
 		self.Conf = Conf
 
-	def get_gdal_dataset_extent(gdal_dataset):
+	def get_gdal_dataset_extent(self, gdal_dataset):
 		x_size = gdal_dataset.RasterXSize
 		y_size = gdal_dataset.RasterYSize
 		geotransform = gdal_dataset.GetGeoTransform()
@@ -29,7 +29,7 @@ class CalcDriftFilter(object):
 		ds_tiff = gdal.Open(self.Conf.f1_name)
 		source_geotransform = ds_tiff.GetGeoTransform()
 		source_projection = ds_tiff.GetProjection()
-		source_extent = get_gdal_dataset_extent(ds_tiff)
+		source_extent = self.get_gdal_dataset_extent(ds_tiff)
 
 		# geotransform = gdal_dataset.GetGeoTransform()
 		if source_geotransform == (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
@@ -43,18 +43,17 @@ class CalcDriftFilter(object):
 		print('Recalculate raster to WGS84')
 		ds_tiff = gdal.Warp('', ds_tiff, dstSRS='+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs', format='MEM')
 		print('Extracting WGS84 extent')
-		extent = get_gdal_dataset_extent(ds_tiff)
+		extent = self.get_gdal_dataset_extent(ds_tiff)
 
 		print('Clipping and Rasterizing land mask to raster extent')
 		# format='MEM',
-		land_mask = gdal.Rasterize('',
-								   '/home/denis/git/ice_drift_pc_ncc/data/land-polygons-complete-4326/arctic_land.shp',
+		land_mask_wgs84 = gdal.Rasterize('', '/Home/denemc/git/ice_drift_pc_ncc/data/arctic_land.shp',
 								   format='MEM',
 								   outputBounds=[extent['xMin'], extent['yMin'],
 												 extent['xMax'], extent['yMax']],
 								   xRes=extent['xRes'], yRes=extent['yRes'])
 		# format='MEM',
-		land_mask = gdal.Warp('', land_mask, format='MEM', dstSRS=source_projection,
+		land_mask = gdal.Warp('', land_mask_wgs84, format='MEM', dstSRS=source_projection,
 							  xRes=source_extent['xRes'], yRes=source_extent['yRes'],
 							  outputBounds=[source_extent['xMin'], source_extent['yMin'],
 											source_extent['xMax'], source_extent['yMax']])
@@ -67,9 +66,14 @@ class CalcDriftFilter(object):
 
 		transform = osr.CoordinateTransformation(old_cs, new_cs)
 
+		land_data = land_mask.GetRasterBand(1).ReadAsArray()
+
 		# Get throughout vector list and filter which over land
-		for i in range(len(self.xxx_f)):
-			if land_mask[self.xxx_f[i], self.yyy_f[i]] == 255:
+		print(self.xxx_f[:])
+		for i in range(len(self.xxx_f[:])):
+			print(self.xxx_f[i], self.yyy_f[i])
+			c, r = int(self.xxx_f[i]), int(self.yyy_f[i])
+			if land_data[r, c] == 255:
 				self.xxx_f[i] = np.NaN
 				self.yyy_f[i] = np.NaN
 				self.uuu_f[i] = np.NaN

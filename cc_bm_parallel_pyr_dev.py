@@ -41,8 +41,7 @@ from datetime import datetime
 
 from netCDF4 import Dataset
 
-from osgeo import gdal, osr, gdal_array
-import ogr
+from osgeo import gdal, osr, gdal_array, ogr
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -1440,10 +1439,6 @@ if __name__ == '__main__':
 
     print('\nPlotting...')
     plot_arrows('%s/01_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img1, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
-                arrwidth=0.002, headwidth=5.5, flag_color=True)
-
-    # Plot land filtered vectors
-    plot_arrows('%s/01_land_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img1, Filter.xxx_f_land, Filter.yyy_f_land, Filter.uuu_f_land, Filter.vvv_f_land, Filter.ccc_f_land,
                 arrwidth=0.002, headwidth=5.5, flag_color=True)
 
     plot_arrows('%s/02_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img2, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
