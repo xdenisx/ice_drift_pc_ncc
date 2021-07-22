@@ -112,7 +112,7 @@ for root, d_names, f_names in os.walk(in_path):
         if f_name.startswith(files_pref) and f_name.endswith('tiff') and f_name.find(polarization) > 0:
             ifile = '%s/%s' % (root, f_name)
 
-            print('\n### %s ###\n' % os.path.basename(ifile))
+            #print('\n### %s ###\n' % os.path.basename(ifile))
 
             date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
@@ -137,7 +137,7 @@ for root, d_names, f_names in os.walk(in_path):
                                     polarization) > 0:
                                 ifile2 = '%s/%s' % (root2, f_name2)
 
-                                print('\n### %s ###\n' % os.path.basename(ifile2))
+                                #print('\n### %s ###\n' % os.path.basename(ifile2))
 
                                 date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
 

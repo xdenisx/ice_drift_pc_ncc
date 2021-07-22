@@ -21,6 +21,7 @@ from skimage.filters import median
 from skimage import exposure
 
 GDALWARP_PATH = 'gdalwarp '
+path_to_coastline = '/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
 
 def save_array_as_geotiff_gcp_mode(input_array, output_path, base_raster):
     print('writing file ' + str(output_path) + '...')
@@ -157,6 +158,64 @@ def lee_filter(band, window, var_noise=0.25):
     band_filtered = mean_window + weights * (band - mean_window)
     return band_filtered
 
+def get_gdal_dataset_extent(gdal_dataset):
+    x_size = gdal_dataset.RasterXSize
+    y_size = gdal_dataset.RasterYSize
+    geotransform = gdal_dataset.GetGeoTransform()
+    x_min = geotransform[0]
+    y_max = geotransform[3]
+    x_max = x_min + x_size * geotransform[1]
+    y_min = y_max + y_size * geotransform[5]
+    return {'xMin': x_min, 'xMax': x_max, 'yMin': y_min, 'yMax': y_max, 'xRes': geotransform[1],
+            'yRes': geotransform[5]}
+
+def get_land_mask(ds_tiff):
+    ''' Rasterized land mask
+    based on OSM data
+    '''
+
+    source_geotransform = ds_tiff.GetGeoTransform()
+    source_projection = ds_tiff.GetProjection()
+    source_extent = get_gdal_dataset_extent(ds_tiff)
+
+    # geotransform = gdal_dataset.GetGeoTransform()
+    if source_geotransform == (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+        # gdal_dataset = gdal.Warp('',gdal_dataset, format='MEM')
+        # print gdal_dataset.RasterXSize
+        # geotransform = gdal_dataset.GetGeoTransform()
+        # if geotransform == (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+        print('Error: GDAL dataset without georeferencing')
+
+    print('Calculating land mask')
+    print('Recalculate raster to WGS84')
+    ds_tiff = gdal.Warp('', ds_tiff, dstSRS='+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs',
+                        format='MEM')
+    print('Extracting WGS84 extent')
+    extent = get_gdal_dataset_extent(ds_tiff)
+
+    # format='MEM',
+
+    # Check if coast data exist in data directory
+    if os.path.isfile(path_to_coastline):
+        print('Clipping and Rasterizing land mask to raster extent')
+        land_mask_wgs84 = gdal.Rasterize('', path_to_coastline,
+                                         format='MEM',
+                                         outputBounds=[extent['xMin'], extent['yMin'],
+                                                       extent['xMax'], extent['yMax']],
+                                         xRes=extent['xRes'], yRes=extent['yRes'])
+        # format='MEM',
+        land_mask = gdal.Warp('', land_mask_wgs84, format='MEM', dstSRS=source_projection,
+                              xRes=source_extent['xRes'], yRes=source_extent['yRes'],
+                              outputBounds=[source_extent['xMin'], source_extent['yMin'],
+                                            source_extent['xMax'], source_extent['yMax']])
+
+        land_data = land_mask.GetRasterBand(1).ReadAsArray()
+
+        del land_mask
+        return land_data
+    else:
+        print('\nCould not find land data in %s!\n' % path_to_coastline)
+
 def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
     # 1) creating CoordinateTransformation:
     target = osr.SpatialReference()
@@ -216,8 +275,25 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
             outdata.SetGeoTransform(ds_wrap.GetGeoTransform())
             outdata.SetProjection(ds_wrap.GetProjection())
             arr_mask = np.copy(arr)
-            arr_mask[~np.isnan(arr)] = 1
+            arr_mask[~np.isnan(arr)] = 255
             arr_mask[np.isnan(arr)] = 0
+
+            ##########################
+            # Create land mask
+            ##########################
+            print('\nApplying land mask...')
+            # Get land mask
+            land_mask = get_land_mask(ds_wrap)
+
+            # Apply land mask
+            print(land_mask)
+            arr_mask[land_mask == 255] = 0
+            print('Done.\n')
+            ##########################
+            # End create lamd mask
+            ##########################
+
+
             outdata.GetRasterBand(1).WriteArray(arr_mask)
             # outdata.GetRasterBand(1).SetNoDataValue(0)
             outdata.FlushCache()

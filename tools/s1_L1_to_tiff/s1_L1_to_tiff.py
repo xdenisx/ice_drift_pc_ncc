@@ -25,9 +25,9 @@ tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
 resolution['GRDH'] = math.ceil(tiff_res/2)
 
-proj_epsg = 32661
+proj_epsg = 5041 #32661
 
-# no data mask
+# Land and no data mask
 f_mask = False
 
 print('\nTarget polarizations: %s\n' % polarizations)
