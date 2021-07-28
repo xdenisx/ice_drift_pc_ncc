@@ -24,7 +24,7 @@ The result will be stored in a local folder:
 2. Data downloading script 
 
 ```
-python asf_meta_download.py /PATH/TO/METALINK/FILE/FROM/STEP/1 /PATH/TO/OUTPUT/FOLDER 
+python download_all.py /PATH/TO/METALINK/FILE/FROM/STEP/1 /PATH/TO/OUTPUT/FOLDER 
 ```
 
 The data will be downloaded in '/PATH/TO/OUTPUT/FOLDER' folder

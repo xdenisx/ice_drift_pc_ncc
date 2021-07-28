@@ -42,8 +42,10 @@ if not os.path.exists(out_path):
     os.makedirs(out_path)
 
 for root, d_names, f_names in os.walk(in_path):
-    print(root, d_names, f_names)
-    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6])
+    #print(root, d_names, f_names)
+    f_names = [fn for fn in f_names if fn.lower().endswith('zip')]
+    f_names.sort(key=lambda x: os.path.basename(x).split('_')[4])
+
     for f_name in f_names:
         #if f_name == f_names[0]: #'20210511' in f_name:
         ifile = '%s/%s' % (root, f_name)
