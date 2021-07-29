@@ -257,7 +257,10 @@ for root, dirs, files in os.walk(in_path):
 unq_dates.sort()
 print('Unique dates: %s' % set(unq_dates))
 
-for idate in unq_dates[:]:
+if len(unq_dates) == 1:
+    unq_dates = unq_dates + unq_dates[0]
+
+for idate in unq_dates[1:]:
     dt_2 = idate
     dt_2 = dt_2 + timedelta(hours=23) + timedelta(minutes=59)
     dt_1 = idate - timedelta(days=days)
@@ -276,7 +279,7 @@ for idate in unq_dates[:]:
                     print('%s added!' % fname)
                     files_to_mosaic.append('%s/%s' % (root, fname))
 
-    if len(files_to_mosaic)>1:
+    if len(files_to_mosaic) > 1:
         print(files_to_mosaic)
 
         files_to_mosaic.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
