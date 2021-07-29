@@ -21,7 +21,7 @@ from skimage.filters import median
 from skimage import exposure
 
 GDALWARP_PATH = 'gdalwarp '
-path_to_coastline = '/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
+path_to_coastline = '/Home/denemc/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
 
 def save_array_as_geotiff_gcp_mode(input_array, output_path, base_raster):
     print('writing file ' + str(output_path) + '...')
@@ -38,7 +38,7 @@ def save_array_as_geotiff_gcp_mode(input_array, output_path, base_raster):
     #transform = gdal.GCPsToGeoTransform(base_raster.GetGCPs())
     gcps = base_raster.GetGCPs()
     #gcps_count = base_raster.GetGCPCount ()
-    gcps_projection = base_raster.GetGCPProjection ()
+    gcps_projection = base_raster.GetGCPProjection()
 
     out_data = driver.Create(output_path, cols, rows, bands, cell_type)
     #out_data.SetProjection (projection)
@@ -243,6 +243,7 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
         print('\nRES: %s\n' % res)
         ds_wrap = gdal.Warp('', copy_ds, format="MEM", dstSRS="EPSG:%s" % t_srs,
                             xRes=res, yRes=res, multithread=True, callback=clb)
+        print('Warping done.')
 
         # Clip data and rescale
         band = ds_wrap.GetRasterBand(1)

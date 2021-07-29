@@ -18,12 +18,13 @@ reproject = True
 
 polarizations = ['HH', 'VV']
 polarizations = [x.lower() for x in polarizations]
+modes = ['EW', 'IW']
 
 # GRD resolutions
 resolution = {}
 tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
-resolution['GRDH'] = math.ceil(tiff_res/2)
+resolution['GRDH'] = tiff_res #math.ceil(tiff_res/2)
 
 proj_epsg = 5041 #32661
 
@@ -61,7 +62,7 @@ for root, d_names, f_names in os.walk(in_path):
         else:
             out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
 
-        if not os.path.isfile(out_tiff_name) and 'EW' in f_name:
+        if not os.path.isfile(out_tiff_name):
             # Unzip
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
             idate = os.path.basename(ifile).split('_')[4]
@@ -121,4 +122,4 @@ for root, d_names, f_names in os.walk(in_path):
             # Remove unziped SAFE folder
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
         else:
-            print('File %s exist' % os.path.basename(out_tiff_name))
+            print('Error with %s' % os.path.basename(out_tiff_name))

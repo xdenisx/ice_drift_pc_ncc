@@ -257,8 +257,9 @@ for root, dirs, files in os.walk(in_path):
 unq_dates.sort()
 print('Unique dates: %s' % set(unq_dates))
 
-for idate in unq_dates[1:]:
+for idate in unq_dates[:]:
     dt_2 = idate
+    dt_2 = dt_2 + timedelta(hours=23)
     dt_1 = idate - timedelta(days=days)
 
     # Find files within i days time gap
