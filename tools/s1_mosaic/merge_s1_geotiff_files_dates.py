@@ -259,7 +259,7 @@ print('Unique dates: %s' % set(unq_dates))
 
 for idate in unq_dates[:]:
     dt_2 = idate
-    dt_2 = dt_2 + timedelta(hours=23)
+    dt_2 = dt_2 + timedelta(hours=23) + timedelta(minutes=59)
     dt_1 = idate - timedelta(days=days)
 
     # Find files within i days time gap
