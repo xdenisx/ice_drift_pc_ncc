@@ -36,12 +36,16 @@ def save_array_as_geotiff_gcp_mode(input_array, output_path, base_raster):
     #transform = base_raster.GetGeoTransform()
     
     #transform = gdal.GCPsToGeoTransform(base_raster.GetGCPs())
+
     gcps = base_raster.GetGCPs()
-    #gcps_count = base_raster.GetGCPCount ()
+    #gcps_count = base_raster.GetGCPCount()
+    print('\ngetting GetGCPProjection...')
     gcps_projection = base_raster.GetGCPProjection()
+    print('done.\n')
 
     out_data = driver.Create(output_path, cols, rows, bands, cell_type)
-    #out_data.SetProjection (projection)
+    #out_data.SetProjection(projection)
+
     #out_data.SetGeoTransform (transform)
     out_data.SetGCPs(gcps, gcps_projection)
 
@@ -96,7 +100,7 @@ def get_coefficients_array (xml_path, xml_element_name, xml_attribute_name, cols
     zoom_y = float(rows) / len (coefficients_rows)
     return ndimage.zoom(coefficients_rows,[zoom_y,zoom_x])
  
-def perform_radiometric_calibration (input_tiff_path, calibration_xml_path, output_tiff_path):
+def perform_radiometric_calibration(input_tiff_path, calibration_xml_path, output_tiff_path):
     
     measurement_file = gdal.Open(input_tiff_path)
     measurement_file_array = np.array(measurement_file.GetRasterBand(1).ReadAsArray().astype(np.float32))
@@ -107,7 +111,7 @@ def perform_radiometric_calibration (input_tiff_path, calibration_xml_path, outp
 
     save_array_as_geotiff_gcp_mode(calibrated_array, output_tiff_path, measurement_file)
 
-def perform_noise_correction (input_tiff_path, calibration_xml_path, noise_xml_path, output_tiff_path):
+def perform_noise_correction(input_tiff_path, calibration_xml_path, noise_xml_path, output_tiff_path):
     measurement_file = gdal.Open(input_tiff_path)
     measurement_file_array = np.array(measurement_file.GetRasterBand(1).ReadAsArray().astype(np.float32))
     
@@ -241,6 +245,7 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
 
     if disk_output:
         print('\nRES: %s\n' % res)
+        print('Start warping...')
         ds_wrap = gdal.Warp('', copy_ds, format="MEM", dstSRS="EPSG:%s" % t_srs,
                             xRes=res, yRes=res, multithread=True, callback=clb)
         print('Warping done.')
@@ -317,9 +322,10 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
 
         outdata = None
         band = None
+        ds = None
 
         #print('Writing geotiff done.')
-        #ds = None
+
 
         #out_ds = gdal.Translate(out_path, outdata, format='GTiff',
         #                        scaleParams=[[-35, -5, 1, 255]], noData=0, bandList=[1], outputType=gdal.GDT_Byte)

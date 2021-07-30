@@ -9,12 +9,15 @@ Author: Eduard Kazakov (silenteddie@gmail.com)
 Last modification: 2017-08-03
 """
 
-import gdal, ogr
+try:
+    import gdal, ogr
+except:
+    from osgeo import gdal, ogr
 import json, os
 
 import numpy as np
 
-path_to_coastline = '/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
+path_to_coastline = '/Home/denemc/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
 
 class RasterAdjuster():
     

@@ -1,4 +1,7 @@
-import gdal
+try:
+    import gdal
+except:
+    from osgeo import gdal
 import sys
 import os
 import numpy as np
@@ -56,7 +59,7 @@ def findRasterIntersect(raster1, raster2):
 
     return array1, array2, col1, row1, intersection
 
-def check_save_pair(f1, f2, id):
+def check_save_pair(f1, f2, id_pair):
     image1_ds = gdal.Open(f1)
     image2_ds = gdal.Open(f2)
 
@@ -69,28 +72,28 @@ def check_save_pair(f1, f2, id):
         print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
               (os.path.basename(f1), os.path.basename(f2), intersect_area))
 
-        if intersect_area > 100000:
+        if intersect_area > 700:
             print('\n### Start making pair... ###')
             # Create dir for a pir
             try:
-                os.makedirs('%s/%02d' % (out_path, id))
+                os.makedirs('%s/%02d' % (out_path, id_pair))
             except:
                 pass
 
             print('\nStart adjusment...')
             adjuster = RasterAdjuster(f1, f2)
-            adjuster.export(raster1_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f1)),
-                            raster2_export_path='%s/%02d/%s' % (out_path, id, os.path.basename(f2)),
-                            mask_export_path='%s/%02d/mask_%s' % (out_path, id, os.path.basename(f1)))
+            adjuster.export(raster1_export_path='%s/%02d/%s' % (out_path, id_pair, os.path.basename(f1)),
+                            raster2_export_path='%s/%02d/%s' % (out_path, id_pair, os.path.basename(f2)),
+                            mask_export_path='%s/%02d/mask_%s' % (out_path, id_pair, os.path.basename(f1)))
             print('Adjusment done.\n')
-            id = id + 1
+            return 1
+        else:
+            return 0
     except:
-        pass
+        return 0
 
     del image1_ds
     del image2_ds
-
-    return id
 
 in_path = sys.argv[1]
 out_path = sys.argv[2]
@@ -107,8 +110,13 @@ id_pair = 0
 
 for root, d_names, f_names in os.walk(in_path):
     #f_names.sort()
-    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6])
-    for f_name in f_names:
+    f_names = [ff for ff in f_names if ff.endswith('tiff')]
+    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
+
+    while len(f_names) != 0:
+        f_name = f_names[0]
+        f_names.pop(0)
+
         if f_name.startswith(files_pref) and f_name.endswith('tiff') and f_name.find(polarization) > 0:
             ifile = '%s/%s' % (root, f_name)
 
@@ -117,38 +125,47 @@ for root, d_names, f_names in os.walk(in_path):
             date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
             if not date_m is None:
-                dt1_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
+                dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
                                                  date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
-                dt1 = datetime.strptime(dt1_str, '%Y/%m/%dT%H:%M:%S')
 
-                # Time lag days ago
-                dt2 = dt1 - timedelta(days=days_lag)
+                # Date time of a current file
+                dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
 
-                for i in range(1, int(days_lag)+1, 1):
+                # Date time of a current file minus time lag
+                dt0_lag = dt0 - timedelta(days=days_lag)
 
-                    dt2_i = dt1 - timedelta(days=i)
+                # try to find files within i days
+                print()
+                for f_name2 in f_names:
+                    ifile2 = '%s/%s' % (root, f_name2)
 
-                    # try to find files within i days
-                    for root2, d_names2, f_names2 in os.walk(in_path):
-                        # f_names.sort()
-                        f_names2.sort(key=lambda x: os.path.basename(x).split('_')[6])
-                        for f_name2 in f_names2:
-                            if f_name2.startswith(files_pref) and f_name2.endswith('tiff') and f_name2.find(
-                                    polarization) > 0:
-                                ifile2 = '%s/%s' % (root2, f_name2)
+                    date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
 
-                                #print('\n### %s ###\n' % os.path.basename(ifile2))
+                    dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
+                                                     date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
+                    dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
 
-                                date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
+                    # If the i date within current time gap
+                    if dt_i >= dt0_lag and dt_i < dt0:
 
-                                dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
-                                                                 date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
-                                dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
+                        #print('\nf1: %s' % os.path.basename(f_name))
+                        #print('f2: %s\n' % os.path.basename(f_name2))
+                        print('\nTime lag is %.1f [hours]' % abs((dt_i-dt0).total_seconds()/3600))
+                        #print('\nMaking pair %02d ... ' % id_pair)
 
-                                # If the i date within current time gap
-                                if dt_i >= dt2 and dt_i < dt1:
-                                    print('\nf1: %s' % os.path.basename(f_name))
-                                    print('f2: %s\n' % os.path.basename(f_name2))
-                                    print('\nMaking pair %02d ...' % id_pair)
-                                    id_pair = check_save_pair(ifile, ifile2, id_pair)
-                                    print('Done.\n')
+                        print('\n##################')
+                        print(ifile)
+                        print(ifile2)
+                        print('##################')
+
+                        res = check_save_pair(ifile, ifile2, id_pair)
+
+                        print('########## %s #############' % res)
+
+                        if res == 1:
+                            id_pair += 1
+
+                        print('Done.\n')
+
+
+

@@ -6,6 +6,7 @@ import glob
 from os.path import expanduser
 import shutil
 import math
+from osgeo import gdal
 
 home = expanduser("~")
 
