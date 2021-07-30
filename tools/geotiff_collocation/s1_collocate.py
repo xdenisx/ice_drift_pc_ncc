@@ -72,7 +72,7 @@ def check_save_pair(f1, f2, id_pair):
         print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
               (os.path.basename(f1), os.path.basename(f2), intersect_area))
 
-        if intersect_area > 700:
+        if intersect_area > 10000:
             print('\n### Start making pair... ###')
             # Create dir for a pir
             try:
