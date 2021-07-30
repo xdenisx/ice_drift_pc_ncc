@@ -72,7 +72,7 @@ def check_save_pair(f1, f2, id_pair):
         print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
               (os.path.basename(f1), os.path.basename(f2), intersect_area))
 
-        if intersect_area > 10000:
+        if intersect_area > 100000:
             print('\n### Start making pair... ###')
             # Create dir for a pir
             try:
@@ -119,9 +119,6 @@ for root, d_names, f_names in os.walk(in_path):
 
         if f_name.startswith(files_pref) and f_name.endswith('tiff') and f_name.find(polarization) > 0:
             ifile = '%s/%s' % (root, f_name)
-
-            #print('\n### %s ###\n' % os.path.basename(ifile))
-
             date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
             if not date_m is None:
@@ -147,25 +144,9 @@ for root, d_names, f_names in os.walk(in_path):
 
                     # If the i date within current time gap
                     if dt_i >= dt0_lag and dt_i < dt0:
-
-                        #print('\nf1: %s' % os.path.basename(f_name))
-                        #print('f2: %s\n' % os.path.basename(f_name2))
                         print('\nTime lag is %.1f [hours]' % abs((dt_i-dt0).total_seconds()/3600))
-                        #print('\nMaking pair %02d ... ' % id_pair)
-
-                        print('\n##################')
-                        print(ifile)
-                        print(ifile2)
-                        print('##################')
-
+                        print('\nMaking pair %02d ... ' % id_pair)
                         res = check_save_pair(ifile, ifile2, id_pair)
-
-                        print('########## %s #############' % res)
-
                         if res == 1:
                             id_pair += 1
-
                         print('Done.\n')
-
-
-
