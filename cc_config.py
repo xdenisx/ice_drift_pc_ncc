@@ -61,7 +61,7 @@ class Config(object):
 		self.pixel_size = pixelSizeX
 		ds = None
 
-		self.rescale_apply = False
+		self.rescale_apply = True
 		self.rescale_factor = 2.
 
 		self.plot_correlation_peaks = False
