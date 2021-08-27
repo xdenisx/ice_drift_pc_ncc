@@ -27,7 +27,7 @@ tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
 resolution['GRDH'] = tiff_res #math.ceil(tiff_res/2)
 
-proj_epsg = 5041 #32661
+proj_epsg = 32661 # 5041
 
 # Land and no data mask
 f_mask = False
