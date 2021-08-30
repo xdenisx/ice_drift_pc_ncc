@@ -9,6 +9,8 @@ cc_bm_parallel_pyr_dev.py
 cmd arguments:
 "filename1 filename2 block_size search_area grid_step"
 
+We recommend to use the image patch size of 16-48 pixels that corresponds to 640-1920 ground meters. The searching zone of < 100 km per day is seems to be optimal to handle typical sea ice drift. 
+
 Example of usage in IPython: 
 
 ```
