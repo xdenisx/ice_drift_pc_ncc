@@ -173,7 +173,10 @@ class RasterAdjuster():
         dataset.SetGeoTransform(raster.GetGeoTransform())
         i = 1
         while i<= raster.RasterCount:
-            dataset.GetRasterBand(i).WriteArray(raster.GetRasterBand(i).ReadAsArray())
+            data = raster.GetRasterBand(i).ReadAsArray()
+            data[data == 0] = np.nan
+            print('\nNumber of 0: %s\n' % len(data[data == 0]))
+            dataset.GetRasterBand(i).WriteArray(data)
             i+=1
         del dataset
 
