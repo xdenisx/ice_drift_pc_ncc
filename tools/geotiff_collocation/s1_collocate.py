@@ -97,7 +97,7 @@ def check_save_pair(f1, f2, id_pair):
 
 in_path = sys.argv[1]
 out_path = sys.argv[2]
-days_lag = int(sys.argv[3])
+days_lag = float(sys.argv[3])
 
 try:
     os.makedirs(out_path)
@@ -108,33 +108,37 @@ polarization = 'hh'
 files_pref = 'UPS'
 id_pair = 0
 
-for root, d_names, f_names in os.walk(in_path):
-    #f_names.sort()
-    f_names = [ff for ff in f_names if ff.endswith('tiff')]
-    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
+f_names = []
 
-    while len(f_names) != 0:
-        f_name = f_names[0]
-        f_names.pop(0)
+for root, d_names, ff_names in os.walk(in_path):
+    for fname in ff_names:
+        #f_names.sort()
+        f_names.append('%s/%s' % (root, fname))
 
-        if f_name.startswith(files_pref) and f_name.endswith('tiff') and f_name.find(polarization) > 0:
-            ifile = '%s/%s' % (root, f_name)
-            date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
+f_names = [ff for ff in f_names if (ff.endswith('tiff') and polarization in ff)]
+f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
 
-            if not date_m is None:
-                dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
-                                                 date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
 
-                # Date time of a current file
-                dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
+for f_name in f_names:
+    if os.path.basename(f_name).startswith(files_pref) and os.path.basename(f_name).endswith('tiff') \
+            and f_name.find(polarization) > 0:
+        ifile = f_name
+        date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
-                # Date time of a current file minus time lag
-                dt0_lag = dt0 - timedelta(days=days_lag)
+        if not date_m is None:
+            dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
+                                             date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
 
-                # try to find files within i days
-                print()
-                for f_name2 in f_names:
-                    ifile2 = '%s/%s' % (root, f_name2)
+            # Date time of a current file
+            dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
+
+            # Date time of a current file minus time lag
+            dt0_lag = dt0 - timedelta(days=days_lag)
+
+            # try to find files within i days
+            for f_name2 in f_names:
+                if f_name2 != f_name:
+                    ifile2 = f_name2 #'%s/%s' % (root, f_name2)
 
                     date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
 
@@ -144,9 +148,17 @@ for root, d_names, f_names in os.walk(in_path):
 
                     # If the i date within current time gap
                     if dt_i >= dt0_lag and dt_i < dt0:
-                        print('\nTime lag is %.1f [hours]' % abs((dt_i-dt0).total_seconds()/3600))
-                        print('\nMaking pair %02d ... ' % id_pair)
-                        res = check_save_pair(ifile, ifile2, id_pair)
-                        if res == 1:
-                            id_pair += 1
-                        print('Done.\n')
+
+                        # Make pair from different sensors
+                        if ('S1' in ifile and 'S1' not in ifile2) or ('S1' in ifile2 and 'S1' not in ifile) or \
+                                ('ALOS' in ifile and 'ALOS' not in ifile2) or ('ALOS' in ifile2 and 'ALOS' not in ifile):
+                            res = check_save_pair(ifile, ifile2, id_pair)
+
+                            if res == 1:
+                                id_pair += 1
+                                print('\nTime lag is %.1f [hours]' % abs((dt_i - dt0).total_seconds() / 3600))
+                                print('\nMaking pair %02d ... ' % id_pair)
+
+                            print('Done.\n')
+                else:
+                    pass
