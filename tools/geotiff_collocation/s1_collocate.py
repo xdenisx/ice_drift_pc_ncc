@@ -3,14 +3,18 @@ try:
 except:
     from osgeo import gdal
 import sys
+import pathlib
 import os
 import numpy as np
 from RasterAdjuster import RasterAdjuster
 import re
 from datetime import datetime, timedelta
+import csv
 
 def findRasterIntersect(raster1, raster2):
-    # load data
+    """ 
+    load data
+    """
     band1 = raster1.GetRasterBand(1)
     band2 = raster2.GetRasterBand(1)
     gt1 = raster1.GetGeoTransform()
@@ -59,7 +63,10 @@ def findRasterIntersect(raster1, raster2):
 
     return array1, array2, col1, row1, intersection
 
-def check_save_pair(f1, f2, id_pair):
+def check_save_pair(f1, f2, out_path, id_pair):
+    """
+    save pair of images collocated into 'out_path' in subdirectory 'id_pair'
+    """
     image1_ds = gdal.Open(f1)
     image2_ds = gdal.Open(f2)
 
@@ -76,15 +83,15 @@ def check_save_pair(f1, f2, id_pair):
             print('\n### Start making pair... ###')
             # Create dir for a pir
             try:
-                os.makedirs('%s/%02d' % (out_path, id_pair))
+                os.makedirs('%s/%03d' % (out_path, id_pair))
             except:
                 pass
 
             print('\nStart adjusment...')
             adjuster = RasterAdjuster(f1, f2)
-            adjuster.export(raster1_export_path='%s/%02d/%s' % (out_path, id_pair, os.path.basename(f1)),
-                            raster2_export_path='%s/%02d/%s' % (out_path, id_pair, os.path.basename(f2)),
-                            mask_export_path='%s/%02d/mask_%s' % (out_path, id_pair, os.path.basename(f1)))
+            adjuster.export(raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1)),
+                            raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2)),
+                            mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1)))
             print('Adjusment done.\n')
             return 1
         else:
@@ -95,70 +102,204 @@ def check_save_pair(f1, f2, id_pair):
     del image1_ds
     del image2_ds
 
-in_path = sys.argv[1]
-out_path = sys.argv[2]
-days_lag = float(sys.argv[3])
-
-try:
-    os.makedirs(out_path)
-except:
-    pass
-
-polarization = 'hh'
-files_pref = 'UPS'
-id_pair = 0
-
-f_names = []
-
-for root, d_names, ff_names in os.walk(in_path):
-    for fname in ff_names:
-        #f_names.sort()
-        f_names.append('%s/%s' % (root, fname))
-
-f_names = [ff for ff in f_names if (ff.endswith('tiff') and polarization in ff)]
-f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
 
 
-for f_name in f_names:
-    if os.path.basename(f_name).startswith(files_pref) and os.path.basename(f_name).endswith('tiff') \
-            and f_name.find(polarization) > 0:
-        ifile = f_name
-        date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
 
-        if not date_m is None:
-            dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
-                                             date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
 
-            # Date time of a current file
-            dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
 
-            # Date time of a current file minus time lag
-            dt0_lag = dt0 - timedelta(days=days_lag)
+def acquireID( parent_folder ):
+    """
+    Get the next pair number ID in given folder
+    """
 
-            # try to find files within i days
-            for f_name2 in f_names:
-                if f_name2 != f_name:
-                    ifile2 = f_name2 #'%s/%s' % (root, f_name2)
+    curID = int(0)
 
-                    date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
+    path = pathlib.Path(parent_folder)
+    for child in path.iterdir():
+        curNameAsNum = None
+        try:
+            curNameAsNum = int(str(child.name))   
+        except:
+            continue
+        if curNameAsNum >= curID:
+            curID = curNameAsNum + 1
 
-                    dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
-                                                     date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
-                    dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
+    return curID
 
-                    # If the i date within current time gap
-                    if dt_i >= dt0_lag and dt_i < dt0:
+def isPairAlreadyPresent( file1, file2, parent_folder ):
+    """
+    True if folder with pair of files already exists
+    """
 
-                        # Make pair from different sensors
-                        if ('S1' in ifile and 'S1' not in ifile2) or ('S1' in ifile2 and 'S1' not in ifile) or \
-                                ('ALOS' in ifile and 'ALOS' not in ifile2) or ('ALOS' in ifile2 and 'ALOS' not in ifile):
-                            res = check_save_pair(ifile, ifile2, id_pair)
+    path = pathlib.Path(parent_folder)
+    ifile1 = pathlib.Path(file1)
+    ifile2 = pathlib.Path(file2)
+    for child in path.iterdir():
+        if child.joinpath(ifile1.name).exists():
+            if child.joinpath(ifile2.name).exists():
+                return True
 
-                            if res == 1:
-                                id_pair += 1
-                                print('\nTime lag is %.1f [hours]' % abs((dt_i - dt0).total_seconds() / 3600))
-                                print('\nMaking pair %02d ... ' % id_pair)
+    return False
 
-                            print('Done.\n')
-                else:
-                    pass
+
+
+def produceIndex( parent_folder ):
+    """
+    Produce a .csv file indexing the pair IDs with important parameters
+    """
+
+    polarization = 'hh'
+    files_pref = 'UPS'
+    
+    with open(str(parent_folder.joinpath("index.csv")), mode = 'w' ) as output_file:
+        output_writer = csv.writer( output_file, delimiter=',', quotechar='"' )
+        output_writer.writerow( [ 'ID', 'Mode of file 1', 'Mode of file 2', "Time difference [h]", \
+        	'Start date of file 1', 'Start time of file 1', 'End date of file 1', 'End time of file 1', \
+        	'Start date of file 2', 'Start time of file 2', 'End date of file 2', 'End time of file 2', \
+        	'File1', 'File2' ] )
+        
+        # Loop through all subdirectories
+        for child in parent_folder.iterdir():
+        
+            # Locate files
+            files = list( child.glob( files_pref + '_' + polarization + '*.tiff'  ) )
+            if len(files) != 2:
+                continue
+            
+            # Sort names by datetime
+            files.sort(key=lambda x: str(x.name).split('_')[6], reverse=False)
+            
+            # Extract mode
+            mode1 = str(files[0].name).split('_')[2]
+            mode2 = str(files[1].name).split('_')[2]
+            # Extract date and time
+            start_date_and_time1 = re.match( r'(\d{8})T(\d{6})', str(files[0].name).split('_')[6] )
+            start_date_and_time1 = '%s/%s/%sT%s:%s:%s' % ( start_date_and_time1.group(1)[0:4],  start_date_and_time1.group(1)[4:6], start_date_and_time1.group(1)[6:8], \
+            	start_date_and_time1.group(2)[0:2], start_date_and_time1.group(2)[2:4], start_date_and_time1.group(2)[4:6], )
+            start_date_and_time1 = datetime.strptime( start_date_and_time1, '%Y/%m/%dT%H:%M:%S')            
+            end_date_and_time1 = re.match( r'(\d{8})T(\d{6})', str(files[0].name).split('_')[7] )
+            end_date_and_time1 = '%s/%s/%sT%s:%s:%s' % ( end_date_and_time1.group(1)[0:4],  end_date_and_time1.group(1)[4:6], end_date_and_time1.group(1)[6:8], \
+            	end_date_and_time1.group(2)[0:2], end_date_and_time1.group(2)[2:4], end_date_and_time1.group(2)[4:6], )
+            end_date_and_time1 = datetime.strptime( end_date_and_time1, '%Y/%m/%dT%H:%M:%S')           
+            start_date_and_time2 = re.match( r'(\d{8})T(\d{6})', str(files[1].name).split('_')[6] )
+            start_date_and_time2 = '%s/%s/%sT%s:%s:%s' % ( start_date_and_time2.group(1)[0:4],  start_date_and_time2.group(1)[4:6], start_date_and_time2.group(1)[6:8], \
+            	start_date_and_time2.group(2)[0:2], start_date_and_time2.group(2)[2:4], start_date_and_time2.group(2)[4:6], )
+            start_date_and_time2 = datetime.strptime( start_date_and_time2, '%Y/%m/%dT%H:%M:%S')           
+            end_date_and_time2 = re.match( r'(\d{8})T(\d{6})', str(files[1].name).split('_')[7] )
+            end_date_and_time2 = '%s/%s/%sT%s:%s:%s' % ( end_date_and_time2.group(1)[0:4],  end_date_and_time2.group(1)[4:6], end_date_and_time2.group(1)[6:8], \
+            	end_date_and_time2.group(2)[0:2], end_date_and_time2.group(2)[2:4], end_date_and_time2.group(2)[4:6], )
+            end_date_and_time2 = datetime.strptime( end_date_and_time2, '%Y/%m/%dT%H:%M:%S')
+ 
+            # Write a new row corresponding to the current pair parameters           
+            output_writer.writerow( [ str(child.name), mode1, mode2, \
+            	"%.2f" % ( (end_date_and_time2 - start_date_and_time1).total_seconds() / 3600 ), \
+            	start_date_and_time1.strftime("%Y-%m-%d"), start_date_and_time1.strftime("%H:%M:%S"), \
+            	end_date_and_time1.strftime("%Y-%m-%d"), end_date_and_time1.strftime("%H:%M:%S"), \
+            	start_date_and_time2.strftime("%Y-%m-%d"), start_date_and_time2.strftime("%H:%M:%S"), \
+            	end_date_and_time2.strftime("%Y-%m-%d"), end_date_and_time2.strftime("%H:%M:%S"), \
+            	str(files[0].name), str(files[1].name) ] )
+
+	
+    return
+
+
+
+if __name__ == "__main__":
+    
+    # Get parameters
+    in_path = sys.argv[1]
+    out_path = sys.argv[2]
+    days_lag = float(sys.argv[3])
+    in_path2 = None
+    if len( sys.argv ) >= 5:
+    	in_path2 = sys.argv[4]
+    days_minimum_lag = float(0)
+    if len( sys.argv ) >= 6:
+    	days_minimum_lag = float(sys.argv[5])
+    
+    try:
+        os.makedirs(out_path)
+    except:
+        pass
+    
+    polarization = 'hh'
+    files_pref = 'UPS'
+    
+    
+    # go through the first in path tree and sort out the names
+    f_names = []
+    for root, d_names, ff_names in os.walk(in_path):
+        for fname in ff_names:
+            #f_names.sort()
+            f_names.append('%s/%s' % (root, fname))
+    f_names = [ff for ff in f_names if (ff.endswith('tiff') and polarization in ff)]
+    f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
+
+    # go through the second in path tree and sort out the names    
+    f_names2 = f_names
+    if in_path2 is not None:
+        f_names2 = []
+        for root, d_names, ff_names in os.walk(in_path2):
+            for fname in ff_names:
+                #f_names.sort()
+                f_names2.append('%s/%s' % (root, fname))
+        f_names2 = [ff for ff in f_names2 if (ff.endswith('tiff') and polarization in ff)]
+        f_names2.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)            
+    
+    # Go through all geotiff images first path
+    for f_name in f_names:
+        if os.path.basename(f_name).startswith(files_pref) and os.path.basename(f_name).endswith('tiff') \
+                and f_name.find(polarization) > 0:
+            ifile = f_name
+            date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
+    
+            if not date_m is None:
+                dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
+                                                 date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
+    
+                # Date time of a current file
+                dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
+    
+                # Date time of a current file minus time lag
+                dt0_lag = dt0 - timedelta(days=days_lag)
+                dt0_lag_plus = dt0 + timedelta(days=days_lag)
+                dt0_minimum_lag = dt0 - timedelta(days=days_minimum_lag)
+                dt0_minimum_lag_plus = dt0 + timedelta(days=days_minimum_lag)
+    
+                # try to find files within i days
+                for f_name2 in f_names2:
+                    if f_name2 != f_name:
+                        ifile2 = f_name2 #'%s/%s' % (root, f_name2)
+    
+                        date_m2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name2)
+    
+                        dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
+                                                         date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
+                        dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
+    
+                        # If the i date within current time gap
+                        if ( ( (dt_i <= dt0_minimum_lag) and (dt_i >= dt0_lag) ) or ( (dt_i >= dt0_minimum_lag_plus) and (dt_i <= dt0_lag_plus) ) ):
+    
+                            # See if pair is already represented
+                            if not isPairAlreadyPresent( ifile, ifile2, out_path ):
+
+                                # Get ID 
+                                id_pair = acquireID(out_path) 
+                                # Save pair 
+                                res = check_save_pair(ifile, ifile2, out_path, id_pair)
+    
+                                if res == 1:
+                                    print('\nTime lag is %.1f [hours]' % abs((dt_i - dt0).total_seconds() / 3600))
+                                    print('\nMaking pair %03d ... ' % id_pair)
+    
+                                print('Done.\n')
+                    else:
+                        pass
+
+
+
+    # Produce csv index over all pairs
+    produceIndex( pathlib.Path(out_path).expanduser().absolute() )
+
+
+
