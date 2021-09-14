@@ -3,7 +3,25 @@
 Usage: 
 
 ```
-python s1_collocate.py /PATH/TO/INPUT/GEOTIFFS /OUTPUT/PATH/FOR/PAIRS TIME_LAG_IN_DAYS (/PATH/TO/INPUT/GEOTIFFS2) (MINIMUM_TIME_LAGS)
+python s1_collocate.py /PATH/TO/INPUT/GEOTIFFS /OUTPUT/PATH/FOR/PAIRS TIME_LAG_IN_DAYS (/PATH/TO/INPUT/GEOTIFFS2) (MINIMUM_TIME_LAGS) (INTERSECTION_RATIO_THRESHOLD)
 ```
 
 Here, '()' indicates optional parameter.
+
+'/PATH/TO/INPUT/GEOTIFFS' is the path to the original geotiffs.
+
+'/OUTPUT/PATH/FOR/PAIRS' is the path to place the outputed pairs in.
+
+'TIME_LAG_IN_DAYS' is a floating point number giving the maximum time duration between images in a pair.
+
+'/PATH/TO/INPUT/GEOTIFFS2' is the path to a second place with original geotiffs. 
+    If given, every image in '/PATH/TO/INPUT/GEOTIFFS' is attempted to be paired with every image in '/PATH/TO/INPUT/GEOTIFFS2'.
+    If not given, the images in '/PATH/TO/INPUT/GEOTIFFS' are instead paired with each other.
+
+'MINIMUM_TIME_LAGS' is a floating point number giving the minimum time duration between images in a pair. 
+    If not given, no minimum is used. 
+
+'INTERSECTION_RATIO_THRESHOLD' is a floating point number giving a threshold between the number of overlapping "active "pixels in the paired images and the number of "active" pixels in the image among the pair which has the smallest number of "active" pixels.
+    Every image pair with a smaller threshold value than 'INTERSECTION_RATIO_THRESHOLD' will be rejected.
+    If not given, a value of 0.34 is used. 
+

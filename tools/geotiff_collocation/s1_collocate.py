@@ -226,6 +226,7 @@ if __name__ == "__main__":
     days_minimum_lag = float(0)
     if len( sys.argv ) >= 6:
     	days_minimum_lag = float(sys.argv[5])
+    intersect_ratio = float(0.34)
     if len( sys.argv ) >= 7:
     	intersect_ratio = float(sys.argv[6])
     
