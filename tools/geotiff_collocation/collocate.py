@@ -63,44 +63,54 @@ def findRasterIntersect(raster1, raster2):
 
     return array1, array2, col1, row1, intersection
 
-def check_save_pair(f1, f2, out_path, id_pair):
+def check_save_pair(f1, f2, out_path, id_pair, intersect_ratio):
     """
     save pair of images collocated into 'out_path' in subdirectory 'id_pair'
     """
-    image1_ds = gdal.Open(f1)
-    image2_ds = gdal.Open(f2)
-
-    gt = image1_ds.GetGeoTransform()
-    pixel_area = abs(gt[1] / 1000. * gt[-5] / 1000.)  # [km]
 
     try:
-        image1_isect_array, image2_isect_array, col, row, isect_bb = findRasterIntersect(image1_ds, image2_ds)
-        intersect_area = pixel_area * col * row
-        print('\nIntersect area for:\n%s\n%s\n\n %.1f [km2]' %
-              (os.path.basename(f1), os.path.basename(f2), intersect_area))
-
-        if intersect_area > 100000:
-            print('\n### Start making pair... ###')
-            # Create dir for a pir
-            try:
-                os.makedirs('%s/%03d' % (out_path, id_pair))
-            except:
-                pass
-
-            print('\nStart adjusment...')
-            adjuster = RasterAdjuster(f1, f2)
-            adjuster.export(raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1)),
-                            raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2)),
-                            mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1)))
-            print('Adjusment done.\n')
-            return 1
-        else:
+        print('\nStart adjusment...')
+        adjuster = RasterAdjuster(f1, f2)
+        # Get arrays of rasters
+        array1 = adjuster.raster1.ReadAsArray()
+        array2 = adjuster.raster2.ReadAsArray()
+        # Acquire the area of non-empty pixels in the rasters
+        area1 = ~( np.isnan(array1) | (array1 == 0) )
+        area2 = ~( np.isnan(array2) | (array2 == 0) )
+        intersection_area = area1 & area2
+        # Acquire the number of pixels for intersection
+        intersection_area = np.sum( intersection_area )
+        area1 = np.sum( area1 )
+        area2 = np.sum( area2 )
+        # If some of the images do not have any information
+        if ( area1 == 0 ):
+            print( "\nNo active pixels after cut away on file: %s" % os.path.basename(f1) )
             return 0
-    except:
+        if ( area2 == 0 ):
+            print( "\nNo active pixels after cut away on file: %s" % os.path.basename(f2) )
+            return 0
+        # If intersection area is too small
+        if ( intersection_area < intersect_ratio * np.min( (area1, area2) ) ):
+            print( "\nToo small of an overlap for images: \n%s and \n%s" % ( os.path.basename(f1), os.path.basename(f2) ) )
+            return 0
+            
+        print('\n### Start making pair... ###')
+        # Create dir for a pir
+        try:
+            os.makedirs('%s/%03d' % (out_path, id_pair))
+        except:
+            print("Failed to make directory: %s/%03d" % (out_path, id_pair) )
+            return 0
+            
+        adjuster.export(raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1)),
+                        raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2)),
+                        mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1)))
+        print('Adjusment done.\n')
+        return 1
+    except Exception as e:
+        print(e)
         return 0
 
-    del image1_ds
-    del image2_ds
 
 
 
@@ -216,6 +226,9 @@ if __name__ == "__main__":
     days_minimum_lag = float(0)
     if len( sys.argv ) >= 6:
     	days_minimum_lag = float(sys.argv[5])
+    intersect_ratio = float(0.34)
+    if len( sys.argv ) >= 7:
+    	intersect_ratio = float(sys.argv[6])
     
     try:
         os.makedirs(out_path)
@@ -286,7 +299,7 @@ if __name__ == "__main__":
                                 # Get ID 
                                 id_pair = acquireID(out_path) 
                                 # Save pair 
-                                res = check_save_pair(ifile, ifile2, out_path, id_pair)
+                                res = check_save_pair(ifile, ifile2, out_path, id_pair, intersect_ratio)
     
                                 if res == 1:
                                     print('\nTime lag is %.1f [hours]' % abs((dt_i - dt0).total_seconds() / 3600))

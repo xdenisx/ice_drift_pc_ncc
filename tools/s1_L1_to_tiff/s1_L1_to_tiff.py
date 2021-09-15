@@ -14,6 +14,12 @@ in_path = sys.argv[1]
 out_path = sys.argv[2]
 # date in output file path
 f_date_in_path = sys.argv[3]
+tiff_res = math.ceil(float(100))
+if len(sys.argv) >= 5:
+    tiff_res = math.ceil(float(sys.argv[4]))
+proj_epsg = 32661 # 5041
+if len(sys.argv) >= 6:
+    proj_epsg=int(sys.argv[5])
 
 reproject = True
 
@@ -23,11 +29,10 @@ modes = ['EW', 'IW']
 
 # GRD resolutions
 resolution = {}
-tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
 resolution['GRDH'] = tiff_res #math.ceil(tiff_res/2)
 
-proj_epsg = 32661 # 5041
+
 
 # Land and no data mask
 f_mask = False
