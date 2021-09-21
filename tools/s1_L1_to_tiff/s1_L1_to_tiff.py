@@ -14,9 +14,6 @@ in_path = sys.argv[1]
 out_path = sys.argv[2]
 # date in output file path
 f_date_in_path = sys.argv[3]
-tiff_res = math.ceil(float(100))
-if len(sys.argv) >= 5:
-    tiff_res = math.ceil(float(sys.argv[4]))
 proj_epsg = 32661 # 5041
 if len(sys.argv) >= 6:
     proj_epsg=int(sys.argv[5])
@@ -29,9 +26,9 @@ modes = ['EW', 'IW']
 
 # GRD resolutions
 resolution = {}
+tiff_res = math.ceil(float(sys.argv[4]))
 resolution['GRDM'] = tiff_res
 resolution['GRDH'] = tiff_res #math.ceil(tiff_res/2)
-
 
 
 # Land and no data mask
@@ -43,13 +40,13 @@ print('\nTarget polarizations: %s\n' % polarizations)
 try:
     os.makedirs('%s/temp' % home)
 except:
-    pass
+    print("Failed to create temp directory!")
 
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 
 for root, d_names, f_names in os.walk(in_path):
-    #print(root, d_names, f_names)
+    print(root, d_names, f_names)
     f_names = [fn for fn in f_names if fn.lower().endswith('zip')]
     f_names.sort(key=lambda x: os.path.basename(x).split('_')[4])
 

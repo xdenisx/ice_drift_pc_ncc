@@ -52,7 +52,7 @@ def get_dt(fname):
     :return: extracted datetime
     '''
 
-    m = re.findall(r'\d\d\d\d\d\d\d\d\w\d\d\d\d\d\d', fname)
+    m = re.findall(r'\d{8}\w\d{6}', fname)
     if m[0]:
         return m[0]
     else:
@@ -61,14 +61,14 @@ def get_dt(fname):
 # Path to input gtiff files
 input_gtiff_files = sys.argv[1]
 
-# Temporary json file for searching
-temp_json_fname = 'temp.json'
-
 # Output path for downloading
 out_s1_path = sys.argv[2]
 
-# Directory for meta links
-os.makedirs('metalinks', exist_ok=True)
+# Temporary json file for searching
+temp_json_fname = f'{out_s1_path}/temp.json'
+
+# Create directory for meta links
+os.makedirs( f'{out_s1_path}/metalinks', exist_ok=True)
 
 for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
     for fname in files:
@@ -92,11 +92,11 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             features.append(Feature(geometry=poly, properties={"test": "test"}))
 
             feature_collection = FeatureCollection(features)
-            with open(temp_json_fname, 'w') as f:
+            with open( temp_json_fname, 'w') as f:
                 dump(feature_collection, f)
 
             # Download metadata
-            download_str = f'python ..\/s1_asf_download\/asf_meta_download.py {temp_json_fname} Sentinel-1B {dt[0:8]} {dt[0:8]} EW GRD_MD '
+            download_str = f'python3 ../s1_asf_download/asf_meta_download.py {out_s1_path} {temp_json_fname} Sentinel-1A {dt[0:8]} {dt[9:]} EW GRD_MD '
             os.system(download_str)
 
             try:
@@ -104,12 +104,15 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             except:
                 pass
 
-            # Download data
-            try:
-                meta_file = glob.glob(f'metalinks/*{dt[0:8]}*{dt[0:8]}*')[0]
-                download_str = f'python ..\/s1_asf_download\/download_all.py {meta_file} {out_s1_path}'
-                os.system(download_str)
-            except:
-                print('\nError: A meta file does not exist or error during downloading.\n')
-            print(f'\nDone.\n')
+# Download data
+try:
+    meta_file = f'{out_s1_path}/metalinks/Sentinel-1A*.metalink*'
+    meta_file = glob.glob( meta_file )
+    print(meta_file)
+    for iterFile in meta_file:
+        download_str = f'python3 ../s1_asf_download/download_all.py {iterFile} {out_s1_path}'
+        os.system(download_str)
+except:
+    print('\nError: A meta file does not exist or error during downloading.\n')
+print(f'\nDone.\n')
 

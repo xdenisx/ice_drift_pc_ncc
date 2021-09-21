@@ -15,7 +15,7 @@
 import os
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 #import shapefile
 import argparse
 
@@ -25,10 +25,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Download metalink file from Alaska SAR Faility server')
 
     # Mandatory arguments
+    parser.add_argument('temp_dir', help='Path to a directory to create temporary files in')
     parser.add_argument('geo_file', help='Path to geojson/shapefile with a geometry')
     parser.add_argument('platform', choices=['Sentinel-1A', 'Sentinel-1B'], help='Sentinel-1A/Sentinel-1B')
-    parser.add_argument('date1', help='Date 1 (YYYYMMDD)')
-    parser.add_argument('date2', help='Date 2 (YYYYMMDD)')
+    parser.add_argument('date', help='Date (YYYYMMDD)')
+    parser.add_argument('time', help='Time  (hhmmss)')
     parser.add_argument('mode', help='Acquisition mode (EW/IW)', choices=['EW', 'IW'])
     #parser.add_argument('polarisation', help='Polarization (HH+HV/VV+VH)', choices=['HH+HV', 'VV+VH'])
     parser.add_argument('grd_level', help='Processing level (GRD mode)', choices=['GRD_MD', 'GRD_HD'])
@@ -46,20 +47,21 @@ args = parse_args()
 
 # Chake dates format
 try:
-    dt1 = datetime.strptime(args.date1, '%Y%m%d')
-    dt2 = datetime.strptime(args.date2, '%Y%m%d')
-    if dt2 < dt1:
-        print('Error: date2 > date1!\nStop executing\n')
-except:
-    print('\nError: date1 or date2 format is wrong!\nMust be: YYYYMMDD\nStop executing\n')
+    date = datetime.strptime(args.date, '%Y%m%d')
+    date = datetime.combine( date, datetime.strptime(args.time, '%H%M%S').time() )
+    dt = timedelta( hours = 24 )
+    dt1 = date - dt
+    dt2 = date + dt
+except Exception as e:
+    print(e)
+    print('\nError: date and/or time format is wrong !\nMust be: YYYYMMDD and HHMMSS \nStop executing\n')
 
 # Modify polarization format
 #if args.polarisation.find('+') > 0:
 #    polarisation = '%s%%2b%s' % (args.polarisation.split('+')[0], args.polarisation.split('+')[1])
 
 # Metalink output file name
-current_directory = os.getcwd()
-metafile_path = '%s/metalinks' % current_directory
+metafile_path = '%s/metalinks' % args.temp_dir
 
 try:
     os.makedirs()
@@ -98,38 +100,31 @@ if geo_file_geom == 'Point':
     coord_str = 'point%28' + '%.1f' % data['coordinates'][0] + '+' \
                 + '%.1f' % data['coordinates'][1] + '%29'
 
-    str_download = "wget --no-check-certificate -O %s %s/param?intersectsWith=" \
-                       "%s\\&platform=%s\&start=%s-%02d-%02dT%02d:%02d:00UTC\\&end=%s-%02d-%02dT23:59:59UTC\\" \
-                       "&beamMode=%s\\&processingLevel=%s\\&output=metalink" \
-                       % (fname_meta, asf_url, coord_str, args.platform, dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute,
-                          dt2.year, dt2.month, dt2.day, args.mode, args.grd_level)
-
-    print('\nStart downloading...')
-    os.system(str_download)
-    print('Success\n\n'
-          'Result stored into the file:\n %s' % fname_meta)
-
-
 if geo_file_geom == 'FeatureCollection':
+
     for feature in data['features']:
         try:
             # List of the coordinates should be reversed as clockwise order is needed
             for coord in feature['geometry']['coordinates'][0]:
-                #print(coord_str)
-                coord_str += '%.2f,%.2f,' % (coord[0], coord[1])
+                if len(coord_str) > 0:
+                    coord_str += ','
+                coord_str += '%.2f%s%.2f' % (coord[1], '%20', coord[0])
         except:
             for coord in feature['geometry']['coordinates'][0][0]:
-                #print(coord_str)
-                coord_str += '%.2f,%.2f,' % (coord[0], coord[1])
-    coord_str = coord_str[:-1]
+                if len(coord_str) > 0:
+                    coord_str += ','
+                coord_str += '%.2f%s%.2f' % (coord[1], '%20', coord[0])
+    #coord_str = coord_str[:-1]
+    coord_str = 'polygon%28%28' + coord_str + '%29%29'
+    #print('Coord_str: ' + coord_str)
 
-    str_download = "wget --no-check-certificate -O %s %s/param?polygon=" \
-                   "%s\\&platform=%s\&start=%s-%02d-%02dT%02d:%02d:00UTC\\&end=%s-%02d-%02dT23:59:59UTC\\" \
-                   "&beamMode=%s\\&processingLevel=%s\\&output=metalink" \
-                   % (fname_meta, asf_url, coord_str, args.platform, dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute,
-                      dt2.year, dt2.month, dt2.day, args.mode, args.grd_level)
+str_download = "wget --no-check-certificate -O %s %s/param?" % (fname_meta, asf_url)
+str_download += "intersectsWith=%s" % coord_str
+str_download += "\&platform=%s" % args.platform
+str_download += "\&start=%s-%02d-%02dT%02d:%02d:00UTC\&end=%s-%02d-%02dT23:59:59UTC" % ( dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute, dt2.year, dt2.month, dt2.day )
+str_download += "\&beamMode=%s\&processingLevel=%s\&output=metalink" % (args.mode, args.grd_level)
 
-    print('\nStart downloading...')
-    os.system(str_download)
-    print('Success\n\n'
-          'Result stored into the file:\n %s' % fname_meta)
+print('\nStart downloading...')
+os.system(str_download)
+print('Success\n\n'
+      'Result stored into the file:\n %s' % fname_meta)
