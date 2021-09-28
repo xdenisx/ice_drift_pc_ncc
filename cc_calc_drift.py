@@ -194,6 +194,9 @@ class CalcDrift(object):
 		self.u_2d_med = u_2d_med
 		self.v_2d_med = v_2d_med
 
+		self.row_2d = x_2d
+		self.col_2d = y_2d
+
 		self.lon_2d = lon_2d
 		self.lat_2d = lat_2d
 

@@ -2,6 +2,7 @@ import numpy as np
 from osgeo import gdal
 import matplotlib.pyplot as plt
 from datetime import datetime
+from sklearn.neighbors import KDTree
 
 class CalcDefo(object):
 	def __init__(self, Conf, Calc, Filter):
@@ -17,6 +18,10 @@ class CalcDefo(object):
 
 		u_2d = self.Calc.u_2d
 		v_2d = self.Calc.v_2d
+
+		u_2d_int = self.Calc.u_2d
+		v_2d_int = self.Calc.v_2d
+
 		u_2d_med = self.Calc.u_2d_med
 		v_2d_med = self.Calc.v_2d_med
 
@@ -47,6 +52,24 @@ class CalcDefo(object):
 			ii, jj = index[0], index[1]
 			u_2d[ii,jj] = uuu_f[ch]
 			v_2d[ii,jj] = vvv_f[ch]
+
+		# !TODO:
+		# Replace nan vectors with values
+		print('Start interpolation of drift data')
+		vector_start_data = np.vstack((self.Calc.row_2d.ravel(), self.Calc.col_2d.ravel())).T
+		vector_start_tree = KDTree(vector_start_data)
+
+		for r in range(len(u_2d[:,0])):
+			for c in range(len(u_2d[0,:])):
+				if np.isnan(u_2d[r,c]):
+
+					# Average neighbors
+					req_data = np.array((self.Calc.row_2d[r, c], self.Calc.col_2d[r, c])).reshape(1, -1)
+
+					nn = vector_start_tree.query_radius(req_data, r=300)[0]  # , count_only=True
+					u_2d[r, c] = np.nanmean(u_2d.ravel()[nn])
+					v_2d[r, c] = np.nanmean(v_2d.ravel()[nn])
+
 
 		# Median vectors
 		'''

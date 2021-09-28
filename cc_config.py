@@ -62,7 +62,7 @@ class Config(object):
 		ds = None
 
 		self.rescale_apply = True
-		self.rescale_factor = 2.
+		self.rescale_factor = 1.
 
 		self.plot_correlation_peaks = False
 

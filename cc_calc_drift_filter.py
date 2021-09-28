@@ -72,8 +72,8 @@ class CalcDriftFilter(object):
 		for i in range(len(self.xxx_f[:])):
 			c, r = int(self.xxx_f[i]), int(self.yyy_f[i])
 			if land_data[r, c] == 255:
-				self.xxx_f[i] = np.NaN
-				self.yyy_f[i] = np.NaN
+				#self.xxx_f[i] = np.NaN
+			    #self.yyy_f[i] = np.NaN
 				self.uuu_f[i] = np.NaN
 				self.vvv_f[i] = np.NaN
 				self.ccc_f[i] = np.NaN
