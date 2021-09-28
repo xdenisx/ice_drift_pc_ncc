@@ -50,11 +50,10 @@ class CalcDefo(object):
 		# Invert to calculate actual position of deformation
 		for ch, index in enumerate(idxs_2d_not_nan):
 			ii, jj = index[0], index[1]
-			u_2d[ii,jj] = uuu_f[ch]
-			v_2d[ii,jj] = vvv_f[ch]
+			u_2d[ii, jj] = uuu_f[ch]
+			v_2d[ii, jj] = vvv_f[ch]
 
-		# !TODO:
-		# Replace nan vectors with values
+		# Replace nan vectors with nearest values (within 300 pixels)
 		print('Start interpolation of drift data')
 		vector_start_data = np.vstack((self.Calc.row_2d.ravel(), self.Calc.col_2d.ravel())).T
 		vector_start_tree = KDTree(vector_start_data)
@@ -66,10 +65,9 @@ class CalcDefo(object):
 					# Average neighbors
 					req_data = np.array((self.Calc.row_2d[r, c], self.Calc.col_2d[r, c])).reshape(1, -1)
 
-					nn = vector_start_tree.query_radius(req_data, r=300)[0]  # , count_only=True
+					nn = vector_start_tree.query_radius(req_data, r=300)[0]
 					u_2d[r, c] = np.nanmean(u_2d.ravel()[nn])
 					v_2d[r, c] = np.nanmean(v_2d.ravel()[nn])
-
 
 		# Median vectors
 		'''
