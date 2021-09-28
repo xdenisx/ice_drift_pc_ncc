@@ -108,31 +108,31 @@ class bulk_downloader:
         if len(sys.argv) > 0:
             download_files = []
             input_files = []
-            for arg in sys.argv[1:]:
-                if arg == '--insecure':
-                    try:
-                        ctx = ssl.create_default_context()
-                        ctx.check_hostname = False
-                        ctx.verify_mode = ssl.CERT_NONE
-                        self.context['context'] = ctx
-                    except AttributeError:
-                        # Python 2.6 won't complain about SSL Validation
-                        pass
+            arg = sys.argv[1]
+            if arg == '--insecure':
+                try:
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                    self.context['context'] = ctx
+                except AttributeError:
+                    # Python 2.6 won't complain about SSL Validation
+                    pass
 
-                elif arg.endswith('.metalink') or arg.endswith('.csv'):
-                    if os.path.isfile( arg ):
-                        input_files.append( arg )
-                        if arg.endswith('.metalink'):
-                            new_files = self.process_metalink(arg)
-                        else:
-                            new_files = self.process_csv(arg)
-                        if new_files is not None:
-                            for file_url in (new_files):
-                                download_files.append( file_url )
+            elif arg.endswith('.metalink') or arg.endswith('.csv'):
+                if os.path.isfile( arg ):
+                    input_files.append( arg )
+                    if arg.endswith('.metalink'):
+                        new_files = self.process_metalink(arg)
                     else:
-                         print (" > I cannot find the input file you specified: {0}".format(arg))
+                        new_files = self.process_csv(arg)
+                    if new_files is not None:
+                        for file_url in (new_files):
+                            download_files.append( file_url )
                 else:
-                    print (" > Command line argument '{0}' makes no sense, ignoring.".format(arg))
+                     print (" > I cannot find the input file you specified: {0}".format(arg))
+            else:
+                print (" > Command line argument '{0}' makes no sense, ignoring.".format(arg))
 
             if len(input_files) > 0:
                 if len(download_files) > 0:

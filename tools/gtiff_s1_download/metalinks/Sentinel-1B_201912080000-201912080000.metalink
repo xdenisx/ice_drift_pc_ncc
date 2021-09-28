@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<metalink xmlns="http://www.metalinker.org/" version="3.0">
-    <publisher><name>Alaska Satellite Facility</name><url>http://www.asf.alaska.edu/</url></publisher>
-    <files>
-        <file name="S1B_EW_GRDM_1SDH_20191208T083240_20191208T083349_019271_024628_123A.zip"><resources><url type="http">https://datapool.asf.alaska.edu/GRD_MD/SB/S1B_EW_GRDM_1SDH_20191208T083240_20191208T083349_019271_024628_123A.zip</url></resources><verification><hash type="md5">35ce040f8ac3f3680e2c8e030ce7fec4</hash></verification><size>288600933</size></file>
-    </files>
-</metalink>
