@@ -63,14 +63,31 @@ def findRasterIntersect(raster1, raster2):
 
     return array1, array2, col1, row1, intersection
 
-def check_save_pair(f1, f2, out_path, id_pair, intersect_ratio):
+def check_save_pair(f1, f2, out_path, id_pair, intersect_ratio, maximum_drift_speed = 0):
     """
     save pair of images collocated into 'out_path' in subdirectory 'id_pair'
     """
 
+    extension = 0
+    dt1 = None
+    dt2 = None
+
+    # Get datetimes of files
+    date_m = re.findall(r'\d{8}T\d{6}', f1)
+    if not date_m is None:
+        dt_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8], date_m[0][9:11], date_m[0][11:13], date_m[0][13:15])
+        dt1 = datetime.strptime(dt_str, '%Y/%m/%dT%H:%M:%S')
+    date_m = re.findall(r'\d{8}T\d{6}', f2)
+    if not date_m is None:
+        dt_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8], date_m[0][9:11], date_m[0][11:13], date_m[0][13:15])
+        dt2 = datetime.strptime(dt_str, '%Y/%m/%dT%H:%M:%S')
+    # Get extension based on time difference and maximum driftspeed
+    if (dt1 is not None) and (dt2 is not None):
+        extension = np.abs(float(maximum_drift_speed)) * np.abs(float( (dt1 - dt2).total_seconds() ))
+    
     try:
         print('\nStart adjusment...')
-        adjuster = RasterAdjuster(f1, f2)
+        adjuster = RasterAdjuster(f1, f2, intersection_extension = extension)
         # Get arrays of rasters
         array1 = adjuster.raster1.ReadAsArray()
         array2 = adjuster.raster2.ReadAsArray()
@@ -229,6 +246,9 @@ if __name__ == "__main__":
     intersect_ratio = float(0.34)
     if len( sys.argv ) >= 7:
     	intersect_ratio = float(sys.argv[6])
+    max_drift_speed = float(0.4)
+    if len( sys.argv ) >= 8:
+    	max_drift_speed = float(sys.argv[7])
     
     try:
         os.makedirs(out_path)
@@ -264,7 +284,7 @@ if __name__ == "__main__":
         if os.path.basename(f_name).startswith(files_pref) and os.path.basename(f_name).endswith('tiff') \
                 and f_name.find(polarization) > 0:
             ifile = f_name
-            date_m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f_name)
+            date_m = re.findall(r'\d{8}T\d{6}', f_name)
     
             if not date_m is None:
                 dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
@@ -299,7 +319,7 @@ if __name__ == "__main__":
                                 # Get ID 
                                 id_pair = acquireID(out_path) 
                                 # Save pair 
-                                res = check_save_pair(ifile, ifile2, out_path, id_pair, intersect_ratio)
+                                res = check_save_pair(ifile, ifile2, out_path, id_pair, intersect_ratio, maximum_drift_speed = max_drift_speed)
     
                                 if res == 1:
                                     print('\nTime lag is %.1f [hours]' % abs((dt_i - dt0).total_seconds() / 3600))
