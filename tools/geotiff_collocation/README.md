@@ -3,7 +3,7 @@
 Usage: 
 
 ```
-python s1_collocate.py /PATH/TO/INPUT/GEOTIFFS /OUTPUT/PATH/FOR/PAIRS TIME_LAG_IN_DAYS (/PATH/TO/INPUT/GEOTIFFS2) (MINIMUM_TIME_LAGS) (INTERSECTION_RATIO_THRESHOLD)
+python s1_collocate.py /PATH/TO/INPUT/GEOTIFFS /OUTPUT/PATH/FOR/PAIRS TIME_LAG_IN_DAYS (/PATH/TO/INPUT/GEOTIFFS2) (MINIMUM_TIME_LAGS) (INTERSECTION_RATIO_THRESHOLD) (MAXIMUM_DRIFT_SPEED)
 ```
 
 Here, '()' indicates optional parameter.
@@ -25,3 +25,4 @@ Here, '()' indicates optional parameter.
     Every image pair with a smaller threshold value than 'INTERSECTION_RATIO_THRESHOLD' will be rejected.
     If not given, a value of 0.34 is used. 
 
+'MAXIMUM_DRIFT_SPEED' is a floating point number giving the fastest speed that ice is allowed/believed to move [in meters per second]. 

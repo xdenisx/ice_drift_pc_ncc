@@ -27,9 +27,11 @@ def parse_args():
     # Mandatory arguments
     parser.add_argument('temp_dir', help='Path to a directory to create temporary files in')
     parser.add_argument('geo_file', help='Path to geojson/shapefile with a geometry')
-    parser.add_argument('platform', choices=['Sentinel-1A', 'Sentinel-1B'], help='Sentinel-1A/Sentinel-1B')
+    parser.add_argument('platform', choices=['Sentinel-1A', 'Sentinel-1B', 'Sentinel-1A,Sentinel-1B'], help='Sentinel-1A/Sentinel-1B')
     parser.add_argument('date', help='Date (YYYYMMDD)')
     parser.add_argument('time', help='Time  (hhmmss)')
+    parser.add_argument('min_hours_delta', help='Hours (hhmmss)')
+    parser.add_argument('max_hours_delta', help='Hours (hhmmss)')
     parser.add_argument('mode', help='Acquisition mode (EW/IW)', choices=['EW', 'IW'])
     #parser.add_argument('polarisation', help='Polarization (HH+HV/VV+VH)', choices=['HH+HV', 'VV+VH'])
     parser.add_argument('grd_level', help='Processing level (GRD mode)', choices=['GRD_MD', 'GRD_HD'])
@@ -49,12 +51,14 @@ args = parse_args()
 try:
     date = datetime.strptime(args.date, '%Y%m%d')
     date = datetime.combine( date, datetime.strptime(args.time, '%H%M%S').time() )
-    dt = timedelta( hours = 24 )
-    dt1 = date - dt
-    dt2 = date + dt
+    dt1 = date + timedelta( hours = int(args.min_hours_delta) )
+    dt2 = date + timedelta( hours = int(args.max_hours_delta) )
 except Exception as e:
     print(e)
     print('\nError: date and/or time format is wrong !\nMust be: YYYYMMDD and HHMMSS \nStop executing\n')
+
+
+
 
 # Modify polarization format
 #if args.polarisation.find('+') > 0:

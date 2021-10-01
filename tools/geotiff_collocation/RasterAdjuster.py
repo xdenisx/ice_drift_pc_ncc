@@ -17,11 +17,11 @@ import json, os
 
 import numpy as np
 
-path_to_coastline = '/Home/denemc/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
+path_to_coastline = '../../data/ne_50m_land.shp'
 
 class RasterAdjuster():
     
-    def __init__(self,raster1_path,raster2_path):
+    def __init__(self,raster1_path,raster2_path, intersection_extension = 0):
         
         # Store input pathes
         self.__raster1_path = raster1_path
@@ -48,6 +48,40 @@ class RasterAdjuster():
         # Get intersection
         self.intersection = self.__intersect_two_wkt_polygons(self.raster1_extent,self.raster2_extent)
         # TODO: if intersection is empty
+        
+        # Extend intersection if requested 
+        if intersection_extension > 0: 
+            try:
+                # Get geometry from intersection polygon
+                intersection_geom = ogr.CreateGeometryFromWkt(self.intersection)
+                ring = intersection_geom.GetGeometryRef(0)
+                # Acquire extreme values
+                extremes = [ ring.GetPoint(0)[0], ring.GetPoint(0)[1], ring.GetPoint(0)[0], ring.GetPoint(0)[1] ]
+                for iterPoints in range(ring.GetPointCount()):
+                    pt = ring.GetPoint( iterPoints )
+                    extremes[0] = np.min( [extremes[0], pt[0]] )
+                    extremes[1] = np.min( [extremes[1], pt[1]] )
+                    extremes[2] = np.max( [extremes[2], pt[0]] )
+                    extremes[3] = np.max( [extremes[3], pt[1]] )
+                extremes = np.array( extremes ).reshape((2,2))
+                extremes = np.mean( extremes, axis = 0 )
+                # Extend all polygon points accordingly
+                for iterPoints in range(ring.GetPointCount()):
+                    pt = ring.GetPoint( iterPoints )
+                    pt = np.array([pt[0], pt[1]])
+
+                    if pt[0] >= np.mean( extremes[0] ):
+                        pt[0] = pt[0] + intersection_extension
+                    else:
+                        pt[0] = pt[0] - intersection_extension
+                    if pt[1] >= np.mean( extremes[1] ):
+                        pt[1] = pt[1] + intersection_extension
+                    else:
+                        pt[1] = pt[1] - intersection_extension
+                    ring.SetPoint( iterPoints, pt[0], pt[1] )
+                self.intersection = intersection_geom.ExportToWkt()
+            except Exception as e:
+                print(str(e))
         
         # cut raster1 to intersection
         self.raster1 = self.__crop_raster_by_polygon_wkt(self.raster1,self.intersection)

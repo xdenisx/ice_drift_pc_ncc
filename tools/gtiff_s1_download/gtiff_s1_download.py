@@ -64,12 +64,24 @@ input_gtiff_files = sys.argv[1]
 # Output path for downloading
 out_s1_path = sys.argv[2]
 
+# Acquire maximum number of hours apart from image that a s1 image should be retrieved
+max_hours = "24"
+if len(sys.argv) >= 4:
+    max_hours = sys.argv[3]
+min_hours = "0"
+if len(sys.argv) >= 5:
+    min_hours = sys.argv[4]
+platform = "Sentinel-1A"
+if len(sys.argv) >= 6:
+    platform = sys.argv[5]
+
 # Temporary json file for searching
 temp_json_fname = f'{out_s1_path}/temp.json'
 
 # Create directory for meta links
 os.makedirs( f'{out_s1_path}/metalinks', exist_ok=True)
 
+# Loop through all input files
 for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
     for fname in files:
         if fname.endswith('tiff') or fname.endswith('tif'):
@@ -86,7 +98,6 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             del ds
 
             poly = Polygon(bbox)
-            #poly = Polygon([[(2.38, 57.322), (23.194, -20.28), (-120.43, 19.15), (2.38, 57.322)]])
 
             features = []
             features.append(Feature(geometry=poly, properties={"test": "test"}))
@@ -96,7 +107,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
                 dump(feature_collection, f)
 
             # Download metadata
-            download_str = f'python3 ../s1_asf_download/asf_meta_download.py {out_s1_path} {temp_json_fname} Sentinel-1A {dt[0:8]} {dt[9:]} EW GRD_MD '
+            download_str = f'python3 ../s1_asf_download/asf_meta_download.py {out_s1_path} {temp_json_fname} {platform} {dt[0:8]} {dt[9:]} {min_hours} {max_hours} EW GRD_MD '
             os.system(download_str)
 
             try:
@@ -106,7 +117,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
 
 # Download data
 try:
-    meta_file = f'{out_s1_path}/metalinks/Sentinel-1A*.metalink*'
+    meta_file = f'{out_s1_path}/metalinks/*.metalink*'
     meta_file = glob.glob( meta_file )
     print(meta_file)
     for iterFile in meta_file:
