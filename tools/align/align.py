@@ -18,7 +18,7 @@ import sys
 import glob
 import os
 from matplotlib.path import Path
-from scipy.spatial import ConvexHull
+# from scipy.spatial import ConvexHull
 
 
 

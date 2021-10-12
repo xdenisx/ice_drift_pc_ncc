@@ -74,6 +74,9 @@ if len(sys.argv) >= 5:
 platform = "Sentinel-1A"
 if len(sys.argv) >= 6:
     platform = sys.argv[5]
+polarization = "HH+HV"
+if len(sys.argv) >= 7:
+    polarization = sys.argv[6]
 
 # Temporary json file for searching
 temp_json_fname = f'{out_s1_path}/temp.json'
@@ -107,7 +110,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
                 dump(feature_collection, f)
 
             # Download metadata
-            download_str = f'python3 ../s1_asf_download/asf_meta_download.py {out_s1_path} {temp_json_fname} {platform} {dt[0:8]} {dt[9:]} {min_hours} {max_hours} EW GRD_MD '
+            download_str = f'python3 ../s1_asf_download/asf_meta_download.py {out_s1_path} {temp_json_fname} {platform} {dt[0:8]} {dt[9:]} {min_hours} {max_hours} EW GRD_MD {polarization} '
             os.system(download_str)
 
             try:
