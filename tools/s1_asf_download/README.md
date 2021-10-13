@@ -14,7 +14,7 @@ You can use QGIS, ArcMap or other software and store it in GeoJSON format.
 1. Metadata gathering script
 
 ```
-python asf_meta_download.py /PATH/TO/GEO/FILE /PLATFORM/ /DATE/ /TIME/ /MINIMUM/HOURS/APART/ /MAXIMUM/HOURS/APART/ /MODE/ /GRD_LEVEL/ 
+python asf_meta_download.py /PATH/TO/GEO/FILE /PLATFORM/ /DATE/ /TIME/ /MINIMUM/HOURS/APART/ /MAXIMUM/HOURS/APART/ /MODE/ /GRD_LEVEL/ /POLARIZATION/ 
 ```
 
 The result will be stored in a local folder:

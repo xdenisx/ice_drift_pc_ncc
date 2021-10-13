@@ -20,7 +20,7 @@ if len(sys.argv) >= 6:
 
 reproject = True
 
-polarizations = ['HH', 'VV']
+polarizations = ['HH', 'VV', 'HV']
 polarizations = [x.lower() for x in polarizations]
 modes = ['EW', 'IW']
 
@@ -55,17 +55,10 @@ for root, d_names, f_names in os.walk(in_path):
         ifile = '%s/%s' % (root, f_name)
         path_to_safe_file = '%s/temp/%s.SAFE' % (home, os.path.basename(ifile.split('.')[0]))
 
-        # Check projected tiff file exist
+        # Check file(s) exist
         m = re.findall(r'\d\d\d\d\d\d\d\dT', f_name[:-4])[0][:-1]
+        if not os.path.isfile( '%s/%s/UPS_*_%s.tiff' % (out_path, m, f_name[:-4]) ):
 
-        if f_date_in_path == '1':
-            if not os.path.exists('%s/%s' % (out_path, m)):
-                os.makedirs('%s/%s' % (out_path, m))
-            out_tiff_name = '%s/%s/UPS_%s_%s.tiff' % (out_path, m, polarizations[0], f_name[:-4])
-        else:
-            out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, polarizations[0], f_name[:-4])
-
-        if not os.path.isfile(out_tiff_name):
             # Unzip
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
             idate = os.path.basename(ifile).split('_')[4]
@@ -73,6 +66,14 @@ for root, d_names, f_names in os.walk(in_path):
             os.system(unzip)
 
             for pol in polarizations:
+
+                if f_date_in_path == '1':
+                    if not os.path.exists('%s/%s' % (out_path, m)):
+                        os.makedirs('%s/%s' % (out_path, m))
+                    out_tiff_name = '%s/%s/UPS_%s_%s.tiff' % (out_path, m, pol, f_name[:-4])
+                else:
+                    out_tiff_name = '%s/UPS_%s_%s.tiff' % (out_path, pol, f_name[:-4])
+
                 try:
                     pol_file = glob.glob('%s/temp/%s.SAFE/measurement/*%s*.tiff' %
                                          (home, os.path.basename(ifile)[:-4], pol))[0]
@@ -104,7 +105,7 @@ for root, d_names, f_names in os.walk(in_path):
                     perform_radiometric_calibration(pol_file, calib_fname, out_calib_name)
 
                     if reproject:
-                        print('\nReptojecting...')
+                        print('\nReprojecting...')
                         if 'GRDM' in out_tiff_name:
                             res = resolution['GRDM']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
@@ -124,5 +125,6 @@ for root, d_names, f_names in os.walk(in_path):
 
             # Remove unziped SAFE folder
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
+
         else:
             print('Error with %s' % os.path.basename(out_tiff_name))
