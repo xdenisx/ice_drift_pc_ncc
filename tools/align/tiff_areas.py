@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	img1_raster = img1.GetRasterBand(1)	
 	img1_array = img1.ReadAsArray()	
 	img1_active_area = get_area_of_array( img1_array, resolution )
-	print( "Area of image 1: %s [m^2]" % str(img1_active_area) )
+	print( "Area of image 1: %s [km^2]" % str(img1_active_area * 1e-6) )
 	
 	
 	# If second image exists
@@ -57,14 +57,14 @@ if __name__ == "__main__":
 		img2 = gdal.Open( path_img2 )
 		img2_raster = img2.GetRasterBand(1)	
 		img2_active_area = get_area_of_array( img2_raster.ReadAsArray(), resolution )
-		print( "Area of image 2: %s [m^2]" % str(img2_active_area) )
+		print( "Area of image 2: %s [km^2]" % str(img2_active_area * 1e-6) )
 	
 		# Compute overlap between images
 		img12_active_area = get_area_of_array( \
 			(img1_raster.ReadAsArray() != 0) & ~np.isnan(img1_raster.ReadAsArray()) & \
 			(img2_raster.ReadAsArray() != 0) & ~np.isnan(img2_raster.ReadAsArray()), \
 			resolution )
-		print( "Area overlapping between image 1 and 2: %s [m^2]" % str(img12_active_area) )
+		print( "Area overlapping between image 1 and 2: %s [km^2]" % str(img12_active_area * 1e-6) )
 
 
 
