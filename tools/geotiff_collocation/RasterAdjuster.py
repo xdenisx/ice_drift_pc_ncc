@@ -209,7 +209,7 @@ class RasterAdjuster():
         while i<= raster.RasterCount:
             data = raster.GetRasterBand(i).ReadAsArray()
             data[data == 0] = np.nan
-            print('\nNumber of 0: %s\n' % len(data[data == 0]))
+            # print('\nNumber of 0: %s\n' % len(data[data == 0]))
             dataset.GetRasterBand(i).WriteArray(data)
             i+=1
         del dataset
