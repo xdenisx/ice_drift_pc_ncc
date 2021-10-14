@@ -31,6 +31,15 @@ class RasterAdjuster():
         self.raster1 = gdal.Open(raster1_path)
         self.raster2 = gdal.Open(raster2_path)
         
+        self.initFromRasters( self.raster1, self.raster2, intersection_extension )
+
+
+
+    def initFromRasters( self, raster1, raster2, intersection_extension = 0 ):
+
+        self.raster1 = raster1
+        self.raster2 = raster2
+
         # From GCP to projected
         if self.__check_gcp_raster(self.raster1):
             self.raster1 = self.__gcp_raster_to_projected(self.raster1)
@@ -209,8 +218,9 @@ class RasterAdjuster():
         while i<= raster.RasterCount:
             data = raster.GetRasterBand(i).ReadAsArray()
             data[data == 0] = np.nan
-            print('\nNumber of 0: %s\n' % len(data[data == 0]))
+            # print('\nNumber of 0: %s\n' % len(data[data == 0]))
             dataset.GetRasterBand(i).WriteArray(data)
+            dataset.GetRasterBand(i).SetDescription(raster.GetRasterBand(i).GetDescription())
             i+=1
         del dataset
 
