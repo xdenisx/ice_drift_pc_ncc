@@ -72,8 +72,6 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
     dt1 = None
     dt2 = None
 
-
-
     # Get datetimes of files
     date_m = re.findall(r'\d{8}T\d{6}', f1)
     if not date_m is None:
@@ -104,7 +102,9 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
                 f1_polarization = re.sub(r"UPS_\w{2}_", "UPS_" + polarization + "_", f1  )
                 f2_polarization = re.sub(r"UPS_\w{2}_", "UPS_" + polarization + "_", f2  )
                 if not (os.path.isfile(f1_polarization) and os.path.isfile(f2_polarization)):
+                    # If it does'nt exist in both
                     continue
+                
                 bandNames.append( polarization )
                 # Acquire cropped band from current polarization to list of bands for file 1
                 tempRaster = gdal.Open( f1_polarization )
@@ -123,10 +123,26 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
         if len( bands1 ) == 0:
             return 0
         print("Bands: %s" % str(bandNames))
+        
+        
+        polar_name = bandNames[0]
+        # If more than one polarization 
+        if len( bandNames ) > 1:
+            polar_name = 'XX'
+        # Rename file name after polarization
+        f1 = re.sub(r"UPS_\w{2}_", "UPS_" + polar_name + "_", f1  )
+        f2 = re.sub(r"UPS_\w{2}_", "UPS_" + polar_name + "_", f2  )
+        
+        raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1))
+        raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2))
+        mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1))
+        # If file already exists
+        if os.path.isfile( raster1_export_path ):
+            return 0
 
         try:
             # Populate all bands
-            tempRaster = gdal.GetDriverByName('GTiff').Create( "%s/temp1" % out_path , adjuster1.raster1.RasterXSize, adjuster1.raster1.RasterYSize, len(bands1), gdal.GDT_Float32 )
+            tempRaster = gdal.GetDriverByName('GTiff').Create( "%s/temp1.tiff" % out_path , adjuster1.raster1.RasterXSize, adjuster1.raster1.RasterYSize, len(bands1), gdal.GDT_Float32 )
             tempRaster.SetGCPs( adjuster1.raster1.GetGCPs(), adjuster1.raster1.GetGCPProjection() )
             tempRaster.SetGeoTransform( adjuster1.raster1.GetGeoTransform() )
             tempRaster.SetProjection( adjuster1.raster1.GetProjectionRef() )
@@ -136,7 +152,7 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
             tempRaster.SetMetadata( dict( zip(["Band " + str(iter) for iter in range(len(bandNames))], bandNames ) ) )
             adjuster1.initFromRasters( tempRaster, tempRaster )
 
-            tempRaster2 = gdal.GetDriverByName('GTiff').Create( "%s/temp2" % out_path , adjuster2.raster1.RasterXSize, adjuster2.raster1.RasterYSize, len(bands2), gdal.GDT_Float32 )
+            tempRaster2 = gdal.GetDriverByName('GTiff').Create( "%s/temp2.tiff" % out_path , adjuster2.raster1.RasterXSize, adjuster2.raster1.RasterYSize, len(bands2), gdal.GDT_Float32 )
             tempRaster2.SetGCPs( adjuster2.raster1.GetGCPs(), adjuster2.raster1.GetGCPProjection() )
             tempRaster2.SetGeoTransform( adjuster2.raster1.GetGeoTransform() )
             tempRaster2.SetProjection( adjuster2.raster1.GetProjectionRef() )
@@ -185,9 +201,6 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
             print("Failed to make directory: %s/%03d" % (out_path, id_pair) )
             return 0
             
-        raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1))
-        raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2))
-        mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1))
         adjuster1.export(raster1_export_path=raster1_export_path,
                         raster2_export_path=raster2_export_path,
                         mask_export_path=mask_export_path)
@@ -231,10 +244,32 @@ def isPairAlreadyPresent( file1, file2, parent_folder ):
 
     path = pathlib.Path(parent_folder)
     ifile1 = pathlib.Path(file1)
+    regexp1 = re.match( r'(^UPS_)(\w{2})(_.*$)', ifile1.name )
+    if regexp1 is None:
+        return False
+    
     ifile2 = pathlib.Path(file2)
+    regexp2 = re.match( r'(^UPS_)(\w{2})(_.*$)', ifile2.name )
+    if regexp2 is None:
+        return False
+    
     for child in path.iterdir():
-        if child.joinpath(ifile1.name).exists():
-            if child.joinpath(ifile2.name).exists():
+        
+        file1_exists = False
+        file2_exists = False
+        
+        list_files = child.glob('*')
+        for cur_file in list_files:
+            regexpCur = re.match( r'(^UPS_)(\w{2})(_.*$)', cur_file.name )
+            if regexpCur is not None:
+                try:
+                    if regexpCur.group(3) == regexp1.group(3):
+                        file1_exists = True
+                    if regexpCur.group(3) == regexp2.group(3):
+                        file2_exists = True
+                except: 
+                    pass
+            if file1_exists and file2_exists:
                 return True
 
     return False
@@ -416,6 +451,17 @@ if __name__ == "__main__":
                         pass
 
 
+    # Remove temporary image files if existing
+    if os.path.isfile("%s/temp1.tiff" % out_path):
+        try:
+            os.remove("%s/temp1.tiff" % out_path)
+        except:
+            pass
+    if os.path.isfile("%s/temp2.tiff" % out_path):
+        try:
+            os.remove("%s/temp2.tiff" % out_path)
+        except:
+            pass
 
     # Produce csv index over all pairs
     produceIndex( pathlib.Path(out_path).expanduser().absolute() )
