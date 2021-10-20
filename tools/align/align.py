@@ -15,9 +15,9 @@ except:
 import numpy as np
 import csv
 import sys
-import glob
-import os
-from matplotlib.path import Path
+# import glob
+# import os
+# from matplotlib.path import Path
 # from scipy.spatial import ConvexHull
 
 
@@ -33,9 +33,7 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	proj1 = image1.GetProjection()
 	cols1 = image1.RasterXSize
 	rows1 = image1.RasterYSize
-	band1 = image1.GetRasterBand(1)
-	array1 = band1.ReadAsArray()
-	array1[array1 == 0] = np.nan
+	num_bands1 = image1.RasterCount
 	
 	# Open second  image and acquire raster as array
 	image2 = gdal.Open(str(path2))
@@ -43,9 +41,7 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	proj2 = image2.GetProjection()
 	cols2 = image2.RasterXSize
 	rows2 = image2.RasterYSize
-	band2 = image2.GetRasterBand(1)
-	array2 = band2.ReadAsArray()
-	array2[array2 == 0] = np.nan
+	num_bands2 = image2.RasterCount
 	
 	# Get deformation data as original pixel locations in image1 and new pixel locations in image1
 	try: 
@@ -107,47 +103,61 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	# Transform image1 raster array
 	try:
 		print("Warping " + str(path1.name))
-		array_warped = transform.warp( array1, invTrans, mode = padding, cval = np.nan )
-		array_warped[array_warped == 0] = np.nan
-		# array_warped[~maskOrig] = np.nan
-		# Create new geotiff file
+        
+        # Create new geotiff file
 		new_path1 = output_path / ("Aligned_" + str(path1.name))
 		GTdriver = gdal.GetDriverByName('GTiff')
 		opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
-		out = GTdriver.Create( str(new_path1), cols1, rows1, 1, gdal.GDT_Float32 )
-		out.SetGeoTransform(geotransform1)
-		out.SetProjection(proj1)
-		# Write alignment to new file
-		band_out = out.GetRasterBand(1)
-		band_out.WriteArray(array_warped)
-		out.FlushCache()
-		del out
-		del array_warped
+		out1 = GTdriver.Create( str(new_path1), cols1, rows1, num_bands1, gdal.GDT_Float32, opts )
+		out1.SetGeoTransform(geotransform1)
+		out1.SetProjection(proj1)
+        
+		for iterBands in range( num_bands1 ):
+			band1 = image1.GetRasterBand(int(iterBands+1))
+			array1 = band1.ReadAsArray()
+			array1[array1 == 0] = np.nan        
+			array_warped = transform.warp( array1, invTrans, mode = padding, cval = np.nan )
+			array_warped[array_warped == 0] = np.nan
+            # array_warped[~maskOrig] = np.nan
+		
+    		# Write alignment to new file
+			band_out = out1.GetRasterBand(int(iterBands+1))
+			band_out.WriteArray(array_warped)
+			out1.FlushCache()
+		del out1
 
-	except:
+	except Exception as e:
+		print(str(e))
 		return 1
 	
 	# Transform image2 raster array
 	try:
 		print("Warping " + str(path2.name))
-		array_warped = transform.warp( array2, trans, mode = padding, cval = np.nan )
-		array_warped[array_warped == 0] = np.nan
-		# array_warped[~maskNew] = np.nan
-		# Create new geotiff file
+        
+        # Create new geotiff file
 		new_path2 = output_path / ("Aligned_" + str(path2.name))
 		GTdriver = gdal.GetDriverByName('GTiff')
 		opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
-		out = GTdriver.Create( str(new_path2), cols2, rows2, 1, gdal.GDT_Float32 )
-		out.SetGeoTransform(geotransform2)
-		out.SetProjection(proj2)
-		# Write alignment to new file
-		band_out = out.GetRasterBand(1)
-		band_out.WriteArray(array_warped)
-		out.FlushCache()
-		del out
-		del array_warped
+		out2 = GTdriver.Create( str(new_path2), cols2, rows2, num_bands2, gdal.GDT_Float32, opts )
+		out2.SetGeoTransform(geotransform2)
+		out2.SetProjection(proj2)
+        
+		for iterBands in range( num_bands2 ):
+		    band2 = image2.GetRasterBand( int(iterBands+1) )
+		    array2 = band2.ReadAsArray()
+		    array2[array2 == 0] = np.nan        
+		    array_warped = transform.warp( array2, trans, mode = padding, cval = np.nan )
+		    array_warped[array_warped == 0] = np.nan
+    		# array_warped[~maskNew] = np.nan
+        
+    		# Write alignment to new file
+		    band_out = out2.GetRasterBand( int( iterBands+1 ) )
+		    band_out.WriteArray(array_warped)
+		    out2.FlushCache()
+		del out2
 
-	except:
+	except Exception as e:
+		print(str(e))
 		return 1
 
 
@@ -163,7 +173,7 @@ def handlePair( image_path, deformation_path, output_path, transform_type, poly_
 	"""
 
 	# Get path to image pair
-	image_path = sorted( list(image_path.glob('UPS_hh_*.tiff' )), key = lambda x: x.name.split('_')[6] )
+	image_path = sorted( list(image_path.glob('UPS_*.tiff' )), key = lambda x: x.name.split('_')[6] )
 	if len(image_path) != 2:
 		raise Exception("Did not exist exactly 2 UPS_hh files!")
 	path1 = image_path[0]
