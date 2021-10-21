@@ -26,3 +26,42 @@ Here, '()' indicates optional parameter.
     If not given, a value of 0.34 is used. 
 
 'MAXIMUM_DRIFT_SPEED' is a floating point number giving the fastest speed that ice is allowed/believed to move [in meters per second]. 
+
+
+
+
+
+
+
+# Calculate and show the areas and overlapping area between two images
+
+```
+python tiff_areas.py /PATH/TO/FIRST/IMAGE/ /RESOLUTION/ /PATH/TO/SECOND/IMAGE/
+```
+
+
+'/PATH/TO/FIRST/IMAGE/': Path to first image
+'/RESOLUTION/': The resolution [in meters per pixel (in each direction)]. For instance, a value of 100 would mean that a pixel corresponds to a 100 x 100 m^2 area.
+'/PATH/TO/SECOND/IMAGE/': Path to a second image. If not given, the script computes the (active) area of the first image. If given, the script computes the overlapping (active) area of the two images.
+
+
+
+# Find the image pairs with the largest overlaps within each time window. Remove all but the largest overlapping pair in each time window (optional).
+
+```
+python cull_pairs.py /PATH/TO/PAIRS/FOLDER/ /RESOLUTION/ /SIZE/OF/TEMPORAL/WINDOW/ /REMOVE/SMALLER/PAIRS/
+```
+
+
+'/PATH/TO/PAIRS/FOLDER/': Path to folder of image pairs
+'/RESOLUTION/': The resolution [in meters per pixel (in each direction)]. For instance, a value of 100 would mean that a pixel corresponds to a 100 x 100 m^2 area.
+'/SIZE/OF/TEMPORAL/WINDOW/': Size of temporal windows [in hours]
+/REMOVE/SMALLER/PAIRS/ : Should the pairs with smaller areas be removed? [1 / 0]
+
+
+
+
+
+
+
+
