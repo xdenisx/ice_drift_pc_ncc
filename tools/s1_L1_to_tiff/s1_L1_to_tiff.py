@@ -142,7 +142,11 @@ for root, d_names, f_names in os.walk(in_path):
                                 print( "\nSaving metadata" )
                                 # Get geolocationGrid
                                 geolocationGrid = get_geolocationGrid( metadata_file )
-                                
+                                # Remove pixel and line elements
+                                for gridPoint in geolocationGrid.findall(".//geolocationGridPoint"):
+                                    for child in gridPoint.findall("./*"):
+                                        if (child.tag == "pixel" or child.tag == "line"):
+                                            gridPoint.remove( child )
                                 
                                 # If exists file 
                                 if os.path.exists(out_calib_name):
