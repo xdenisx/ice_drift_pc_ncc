@@ -6,7 +6,11 @@ import glob
 from os.path import expanduser
 import shutil
 import math
-from osgeo import gdal
+try:
+    from osgeo import gdal
+except:
+    import gdal
+import xml.etree.ElementTree
 
 home = expanduser("~")
 
@@ -14,11 +18,12 @@ in_path = sys.argv[1]
 out_path = sys.argv[2]
 # date in output file path
 f_date_in_path = sys.argv[3]
-proj_epsg = 32661 # 5041
+proj_epsg = 5041
 if len(sys.argv) >= 6:
     proj_epsg=int(sys.argv[5])
 
 reproject = True
+save_metadata = True
 
 polarizations = ['HH', 'VV', 'HV']
 polarizations = [x.lower() for x in polarizations]
@@ -122,6 +127,52 @@ for root, d_names, f_names in os.walk(in_path):
                         except:
                             pass
                         print('Reprojecting done.\n')
+                        
+                    if save_metadata:
+                        
+                        # Get all xml files in annotation
+                        metadata_files = glob.glob('%s/annotation/*.xml' % (path_to_safe_file))
+                        # Loop through all xml files
+                        for metadata_file in metadata_files:
+                            # If current xml file has a name identical to current pol-file
+                            tempRegexp1 = re.match( "^(.*).tiff$", os.path.basename( pol_file ) )
+                            tempRegexp2 = re.match( "^(.*).xml$", os.path.basename( metadata_file ) )
+                            if ( tempRegexp1.group(1) == tempRegexp2.group(1) ):
+                                
+                                print( "\nSaving metadata" )
+                                # Get geolocationGrid
+                                geolocationGrid = get_geolocationGrid( metadata_file )
+                                
+                                
+                                # If exists file 
+                                if os.path.exists(out_calib_name):
+                                
+                                    # Open file
+                                    opened_file = gdal.Open( out_calib_name )
+                                    # Get metadata
+                                    metadata = opened_file.GetMetadata( )
+                                    # Insert geolocationGrid
+                                    metadata["geolocationGrid"] = xml.etree.ElementTree.tostring( geolocationGrid )
+                                    # Write to metadata
+                                    opened_file.SetMetadata( metadata )
+                                    # Flush to file
+                                    opened_file.FlushCache()
+                                
+                                # If exists file 
+                                if os.path.exists(out_tiff_name):
+                                    # Open file
+                                    opened_file = gdal.Open( out_tiff_name )
+                                    # Get metadata
+                                    metadata = opened_file.GetMetadata( )
+                                    # Insert geolocationGrid
+                                    metadata["geolocationGrid"] = xml.etree.ElementTree.tostring( geolocationGrid )
+                                    # Write to metadata
+                                    opened_file.SetMetadata( metadata )
+                                    # Flush to file
+                                    opened_file.FlushCache()
+                                
+                                
+                                
 
             # Remove unziped SAFE folder
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
