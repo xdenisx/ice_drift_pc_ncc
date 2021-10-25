@@ -11,14 +11,21 @@ from skimage import transform
 try:
 	from osgeo import gdal
 except:
-	import gdal
+	import gdal, osr
 import numpy as np
 import csv
 import sys
+import LocationMapping
 # import glob
 # import os
 # from matplotlib.path import Path
 # from scipy.spatial import ConvexHull
+
+
+
+
+
+
 
 
 
@@ -34,6 +41,7 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	cols1 = image1.RasterXSize
 	rows1 = image1.RasterYSize
 	num_bands1 = image1.RasterCount
+	location_mapping1 = LocationMapping( geotransform1, proj1 )
 	
 	# Open second  image and acquire raster as array
 	image2 = gdal.Open(str(path2))
@@ -42,6 +50,7 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	cols2 = image2.RasterXSize
 	rows2 = image2.RasterYSize
 	num_bands2 = image2.RasterCount
+	location_mapping2 = LocationMapping( geotransform2, proj2 )
 	
 	# Get deformation data as original pixel locations in image1 and new pixel locations in image1
 	try: 
