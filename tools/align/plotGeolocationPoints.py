@@ -25,6 +25,9 @@ def plotInterpolatedVariable( image_path, band_name, variable_name ):
     
     image = gdal.Open( image_path )
     
+    array = None
+    Z = None
+    
     # Get mapping between coordinates for the given image
     location_mapping = LocationMapping( image.GetGeoTransform(), image.GetProjection() )
     
@@ -83,12 +86,17 @@ def plotInterpolatedVariable( image_path, band_name, variable_name ):
         Z = f( X, Y )
         # Z = f( np.arange( image.RasterXSize ) , np.arange( image.RasterYSize ) )
         
-        return Z
         
-
+    
+    # Get band with band name
+    for iterBands in range( image.RasterCount ):
+        # Get current raster band
+        band = image.GetRasterBand(int(iterBands+1))
+        # Get name of raster band
+        if band_name == band.GetDescription():
+            array = band.ReadAsArray()
         
-        
-    return None
+    return (Z, array)
 
 
 
@@ -112,12 +120,26 @@ if __name__ == "__main__":
 	if len(sys.argv) >= 4:
 	    variable_name = sys.argv[3]
 
-	Z = plotInterpolatedVariable( str(image_path), band_name, variable_name )
-    
-	if Z is not None:
-		plt.imshow( Z )
-		plt.xlabel("Raster X-dim")
-		plt.ylabel("Raster Y-dim")
-		plt.colorbar()
+	Z, array = plotInterpolatedVariable( str(image_path), band_name, variable_name )
+
+	if Z is not None or array is not None:    
+		plt.figure(1)
+        
+		if Z is not None:
+			plt.subplot(1,2,1)
+			plt.imshow( Z )
+			plt.xlabel("Raster X-dim")
+			plt.ylabel("Raster Y-dim")
+			plt.title(variable_name)
+			plt.colorbar()
+            
+		if array is not None:
+			plt.subplot(1,2,2)
+			plt.imshow( array )
+			plt.xlabel("Raster X-dim")
+			plt.ylabel("Raster Y-dim")
+			plt.title(band_name)
+			plt.colorbar()
+    		
 		plt.show()
 
