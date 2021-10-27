@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
 Class for mapping between lat-lon coordinates and image projection coordinate, and raster coordinates inside image.
 
+2021-10-22 Anders Gunnar Felix Hildeman
 
-Created on Fri Oct 22 18:22:39 2021
-
-@author: andy
 """
+
 
 try:
     from osgeo import osr

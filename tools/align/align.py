@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 This script gives functionality to align two geotiff images given a velocity vector field.
 
@@ -11,11 +13,12 @@ from skimage import transform
 try:
 	from osgeo import gdal
 except:
-	import gdal, osr
+	import gdal
 import numpy as np
 import csv
 import sys
-import LocationMapping
+import xml.etree.ElementTree
+from LocationMapping import LocationMapping
 # import glob
 # import os
 # from matplotlib.path import Path
@@ -23,6 +26,104 @@ import LocationMapping
 
 
 
+
+
+def warping( path, output_path, image, trans, padding ):
+    
+    # Create new geotiff file
+	new_path = output_path / ("Aligned_" + str(path.name))
+	GTdriver = gdal.GetDriverByName('GTiff')
+	opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
+	out = GTdriver.Create( str(new_path), image.RasterXSize, image.RasterYSize, image.RasterCount, gdal.GDT_Float32, opts )
+	out.SetGeoTransform(image.GetGeoTransform())
+	out.SetProjection(image.GetProjection())
+	metadata = image.GetMetadata()
+    
+    # Get mapping between coordinates for the given image
+	location_mapping = LocationMapping( image.GetGeoTransform(), image.GetProjection() )
+    
+	# Preallocate output array
+	array = np.zeros( (image.RasterYSize, image.RasterXSize, image.RasterCount), dtype=float )
+
+	for iterBands in range( image.RasterCount ):
+    
+        # Get current raster band
+		band = image.GetRasterBand(int(iterBands+1))
+        # Get name of raster band
+		band_name = band.GetDescription()
+		# Get raster array from current band
+		array[:,:, iterBands] = band.ReadAsArray()
+        # Get corresponding band from out raster
+		band_out = out.GetRasterBand(int(iterBands+1))
+        # Set name of band for output
+		band_out.SetDescription( band_name )
+        
+        
+        # If raster band name exists in metadata, warp the geolocationGridPoints
+		if ( band_name in metadata.keys() ):
+            # Get xml from current metadata
+			try:
+			    xml_tree = xml.etree.ElementTree.fromstring( metadata[band_name] )
+			    if (xml_tree.tag == 'geolocationGrid'):
+			        # Get all grid points xml elements
+			        gridPoints = list( xml_tree.findall( './geolocationGridPointList/geolocationGridPoint' ) )
+			        # Go through all girdPoint elements
+			        lat = np.zeros( (len(gridPoints)) )
+			        long = np.zeros( (len(gridPoints)) )
+			        ok_grid_points = np.zeros( (len(gridPoints)), dtype = bool )
+			        for iterGridPoints, gridPoint in enumerate(gridPoints):
+			            # Insert current latitude and longitude value
+			            cur_lat = gridPoint.find('./latitude')
+			            cur_long = gridPoint.find('./longitude')
+			            # If the latitude and longitude value actually existed
+			            if cur_lat is not None and cur_long is not None:
+			                # Insert current values in arrays
+			                lat[iterGridPoints] = float(cur_lat.text)
+			                long[iterGridPoints] = float(cur_long.text)
+			                ok_grid_points[iterGridPoints] = True
+
+			        # Map geolocation points
+			        x,y = location_mapping.latLon2Raster( np.array(lat), np.array(long) )
+			        points = np.stack( (x,y), axis = 1)
+			        points = trans( points )
+			        ok_grid_points = ok_grid_points & np.all(points >= 0, axis=1)
+			        lat,long = location_mapping.raster2LatLon( points[:, 0], points[:, 1] )
+
+			        # Go through all grid points again
+			        for iterGridPoints, gridPoint in enumerate(gridPoints):
+                        # If current grid point is marked as 'ok'
+			            if ok_grid_points[iterGridPoints]:
+			                gridPoint.find('./latitude').text = str( lat[iterGridPoints] )
+			                gridPoint.find('./longitude').text = str( long[iterGridPoints] )
+			            else:
+			                # Otherwise, remove
+			                xml_tree.find( './geolocationGridPointList' ).remove(gridPoint)
+                            
+			        # Write new metadata
+			        metadata[band_name] = xml.etree.ElementTree.tostring( xml_tree )
+
+
+			except Exception as e:
+			    print(e)
+			    return 1
+
+        
+	array[array == 0] = np.nan        
+	array_warped = transform.warp( array, trans, mode = padding, cval = np.nan )
+	array_warped[array_warped == 0] = np.nan
+	# array_warped[~maskOrig] = np.nan
+    
+	for iterBands in range( image.RasterCount ):
+		# Get corresponding band from out raster
+		band_out = out.GetRasterBand(int(iterBands+1))
+		# Write aligned array to output
+		band_out.WriteArray(array_warped[:,:,iterBands])
+    
+	out.SetMetadata( metadata )
+	out.FlushCache()
+	del out
+    
+	return 0
 
 
 
@@ -36,28 +137,15 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 
 	# Open first image and acquire raster as array
 	image1 = gdal.Open(str(path1))
-	geotransform1 = image1.GetGeoTransform()
-	proj1 = image1.GetProjection()
-	cols1 = image1.RasterXSize
-	rows1 = image1.RasterYSize
-	num_bands1 = image1.RasterCount
-	location_mapping1 = LocationMapping( geotransform1, proj1 )
 	
 	# Open second  image and acquire raster as array
 	image2 = gdal.Open(str(path2))
-	geotransform2 = image2.GetGeoTransform()
-	proj2 = image2.GetProjection()
-	cols2 = image2.RasterXSize
-	rows2 = image2.RasterYSize
-	num_bands2 = image2.RasterCount
-	location_mapping2 = LocationMapping( geotransform2, proj2 )
 	
 	# Get deformation data as original pixel locations in image1 and new pixel locations in image1
 	try: 
 		with open( deformation_path ) as csvfile:
 			csvreader = csv.reader(csvfile)
 			deformations = np.array( [ row for row in csvreader ] ).astype(float)
-
 	except:
 		return 1
 	deformations = deformations[ ~np.any( np.isnan(deformations), axis=1 ), : ]
@@ -113,61 +201,24 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	try:
 		print("Warping " + str(path1.name))
         
-        # Create new geotiff file
-		new_path1 = output_path / ("Aligned_" + str(path1.name))
-		GTdriver = gdal.GetDriverByName('GTiff')
-		opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
-		out1 = GTdriver.Create( str(new_path1), cols1, rows1, num_bands1, gdal.GDT_Float32, opts )
-		out1.SetGeoTransform(geotransform1)
-		out1.SetProjection(proj1)
+		if warping( path1, output_path, image1, invTrans, padding ):
+		    return 1
+
+	except Exception as e:
+		print(str(e))
+		return 1
+    
+	# Transform image2 raster array
+	try:
+		print("Warping " + str(path2.name))
         
-		for iterBands in range( num_bands1 ):
-			band1 = image1.GetRasterBand(int(iterBands+1))
-			array1 = band1.ReadAsArray()
-			array1[array1 == 0] = np.nan        
-			array_warped = transform.warp( array1, invTrans, mode = padding, cval = np.nan )
-			array_warped[array_warped == 0] = np.nan
-            # array_warped[~maskOrig] = np.nan
-		
-    		# Write alignment to new file
-			band_out = out1.GetRasterBand(int(iterBands+1))
-			band_out.WriteArray(array_warped)
-			out1.FlushCache()
-		del out1
+		if warping( path2, output_path, image2, trans, padding ):
+		    return 1
 
 	except Exception as e:
 		print(str(e))
 		return 1
 	
-	# Transform image2 raster array
-	try:
-		print("Warping " + str(path2.name))
-        
-        # Create new geotiff file
-		new_path2 = output_path / ("Aligned_" + str(path2.name))
-		GTdriver = gdal.GetDriverByName('GTiff')
-		opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
-		out2 = GTdriver.Create( str(new_path2), cols2, rows2, num_bands2, gdal.GDT_Float32, opts )
-		out2.SetGeoTransform(geotransform2)
-		out2.SetProjection(proj2)
-        
-		for iterBands in range( num_bands2 ):
-		    band2 = image2.GetRasterBand( int(iterBands+1) )
-		    array2 = band2.ReadAsArray()
-		    array2[array2 == 0] = np.nan        
-		    array_warped = transform.warp( array2, trans, mode = padding, cval = np.nan )
-		    array_warped[array_warped == 0] = np.nan
-    		# array_warped[~maskNew] = np.nan
-        
-    		# Write alignment to new file
-		    band_out = out2.GetRasterBand( int( iterBands+1 ) )
-		    band_out.WriteArray(array_warped)
-		    out2.FlushCache()
-		del out2
-
-	except Exception as e:
-		print(str(e))
-		return 1
 
 
 	return 0
