@@ -35,7 +35,7 @@ def plotInterpolatedVariable( image_path, band_name, variable_name ):
             tags = image.GetMetadata().keys()
             print( "No band name given! Possible band names are: " )
             print( list(tags) )
-            return None
+            return (None, None)
     
     if band_name in image.GetMetadata():
         
@@ -47,7 +47,7 @@ def plotInterpolatedVariable( image_path, band_name, variable_name ):
                 tags.add( elem.tag )
             print( "No variable given! Possible variables are: " )
             print( list(tags) )
-            return None
+            return (None, None)
         
         # Get all grid points xml elements
         gridPoints = list( xml_tree.findall( './geolocationGridPointList/geolocationGridPoint' ) )
