@@ -58,21 +58,36 @@ def get_subdirectories( path_pairs, resolution ):
     
     
 def get_time_windows( subdirectories, time_delta ):    
-    # Get time windows
-    num_windows = 0
-    if len( subdirectories ) > 0:
-        num_windows = get_time_window_index( subdirectories[-1]["datetime"][1], subdirectories[0]["datetime"][1], time_delta ) + 1
-    windows = [ [] for iter in range( num_windows ) ]
-    for iter, subdirectory in enumerate( subdirectories ):
-        # Get current pairs time window
-        index = get_time_window_index( subdirectory["datetime"][1], subdirectories[0]["datetime"][1], time_delta )
-        windows[ index ].append(iter)    
+    
+    # Get number of unique starting times
+    starting_times = []
+    for subdirectory in subdirectories:
+        if all( [ subdirectory["datetime"][0] != iter for iter in starting_times ] ):
+            starting_times.append( subdirectory["datetime"][0] )
+            
+    windows = {}
+    list_windows = []
+    for starting_time in starting_times:
         
-    # Sort inside each window based on overlapping areas
-    for window in windows:
-        window.sort( reverse = True, key = lambda x : subdirectories[x]["areas"][2] )
-
-    return windows
+        windows[str(starting_time)] = {}
+        
+        # Get all subdirectories with         
+        for iter, subdirectory in enumerate( subdirectories ):
+            # If part of current starting time
+            if ( subdirectory["datetime"][0] == starting_time ):
+                index = get_time_window_index( subdirectory["datetime"][1], subdirectory["datetime"][0], time_delta )
+                if not str(index) in windows[str(starting_time)].keys():
+                    windows[str(starting_time)][str(index)] = []
+                windows[str(starting_time)][str(index)].append( iter )
+                
+        # Sort dictionary elemetns
+        for index in windows[str(starting_time)].keys():
+            windows[str(starting_time)][index].sort( reverse = True, key = lambda x : subdirectories[x]["areas"][2] )
+            
+        # Make inner dictionary into list
+        list_windows.extend( [ windows[str(starting_time)][index] for index in windows[str(starting_time)].keys() ] )
+            
+    return list_windows
 
 
 
@@ -120,6 +135,7 @@ if __name__ == "__main__":
     
     # Get the time windows
     windows = get_time_windows( subdirectories, time_delta )
+    print(windows)
     
     for iter, window in enumerate( windows ):
         

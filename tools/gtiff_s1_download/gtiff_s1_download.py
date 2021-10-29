@@ -53,6 +53,8 @@ def get_dt(fname):
     '''
 
     m = re.findall(r'\d{8}\w\d{6}', fname)
+    if len(m) == 0:
+        return None
     if m[0]:
         return m[0]
     else:
@@ -98,6 +100,8 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
 
             # Get date and time
             dt = get_dt(fname)
+            if dt is None:
+                continue
             del ds
 
             poly = Polygon(bbox)

@@ -347,3 +347,20 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
     copy_ds = None
 
     return 1
+
+
+def get_geolocationGrid( annotation_xml_file ):
+    
+    geolocationGrid = None
+    
+    try:
+        # Get root of xml tree
+        root = xml.etree.ElementTree.parse(annotation_xml_file).getroot()
+        # Get geolocation grid
+        geolocationGrid = root.find('.//geolocationGrid')
+    except Exception as e:
+        print( "Problem finding the geolocationGrid!" )
+        print( e )
+        
+    return geolocationGrid
+
