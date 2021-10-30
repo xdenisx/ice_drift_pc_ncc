@@ -102,12 +102,14 @@ if __name__ == "__main__":
     dataset = xr.open_dataset( str(output_file) )
     dataset_names = list(dataset.keys())
     # Get time stamps in datetime format
-    times = dataset["time"].values
-    times = np.array( [datetime.fromtimestamp( elem ) for elem in (times - np.datetime64('1970-01-01T00:00:00') )/ np.timedelta64(1, 's') ] )
+    time_instances = dataset["time"].values
+    time_instances = np.array( [datetime.fromtimestamp( elem ) for elem in (time_instances - np.datetime64('1970-01-01T00:00:00') )/ np.timedelta64(1, 's') ] )
     # Sort out times of interest
-    allowed_times = np.array( [ (elem >= dt0) & (elem <= dt1) for elem in times ] )
+    allowed_times = np.array( [ (elem >= dt0) & (elem <= dt1) for elem in time_instances ] )
     dataset = dataset.isel( time = allowed_times )
-    times = times[allowed_times]
+    time_instances = time_instances[allowed_times]
+    
+    # Get dataset of time-averaged temperatures
     
     
     
@@ -116,11 +118,12 @@ if __name__ == "__main__":
     plt.figure(1)
     for iter, variable in enumerate( dataset_names ):
         plt.subplot(2, len( dataset_names ), iter+1)
-        # Interpolate to raster points
-        values[iter] = dataset.sel( latitude = xr.DataArray( lat, dims = "points" ), longitude = xr.DataArray( lon, dims = "points" ), method = "nearest" )[ variable ]
+        
+        # Get dataarray for current variable
+        values[iter] = dataset[variable]
         
         # Plot spatial
-        plt.imshow( values[iter].isel( time = 0 ).values.reshape( (image.RasterXSize, image.RasterYSize) ) )
+        plt.imshow( values[iter].mean(dim = "time").sel( latitude = xr.DataArray( lat, dims = "points" ), longitude = xr.DataArray( lon, dims = "points" ), method = "nearest" ).values.reshape( (image.RasterYSize, image.RasterXSize) )  - 273.15 )
         plt.xlabel("X-values")
         plt.ylabel("Y-values")
         plt.title( dataset_names[iter] )
@@ -128,10 +131,16 @@ if __name__ == "__main__":
         
         # Plot temporal
         plt.subplot(2, len( dataset_names ), len( dataset_names ) + iter+1)
-        plt.plot( times, np.mean(values[iter].values, axis=1) )
+        
+        plt.plot( time_instances, values[iter].max(dim = ("longitude", "latitude") ) - 273.15, color = "red", linestyle='dashed' )
+        plt.plot( time_instances, values[iter].min(dim = ("longitude", "latitude") ) - 273.15, color = "blue", linestyle='dashed' )
+        plt.plot( time_instances, values[iter].mean(dim = ("longitude", "latitude") ) - 273.15, color = "black", linestyle='solid' )
         plt.xlabel("Time")
-        plt.ylabel("Mean temperature [K]")
+        plt.ylabel("Temperature [K]")
         plt.title( dataset_names[iter] )
+        
+        
+        
         
     plt.show()
         
