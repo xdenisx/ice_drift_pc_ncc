@@ -45,6 +45,8 @@ def download_ERA5( year, month, day, time, variable_names, output_file, area = N
     if area is not None:
         print( "Area: %s" % str(area) )
         request_dict["area"] = area
+        
+    print( "Store to %s" % output_file )
     
     # Create request for file and wait
     c.retrieve( source, request_dict, output_file )
