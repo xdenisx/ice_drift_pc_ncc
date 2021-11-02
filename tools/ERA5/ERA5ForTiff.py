@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # If image_file is a directory
     if image_files.is_dir():
         # Get list of image files
-        image_files = np.concatenate( ( list(image_files.glob('./*.tiff')), list(image_files.glob('./*.tif')) ) )
+        image_files = np.concatenate( ( list(image_files.glob('./*.tiff')), list(image_files.glob('./*.tif')), list(image_files.glob('./*/*.tiff')), list(image_files.glob('./*/*.tif')) ) )
     else:
         image_files = [image_files]
     
@@ -75,14 +75,15 @@ if __name__ == "__main__":
         if len(sys.argv) >= 6:
             hours_after = int(sys.argv[5])
             
-        if not image_file.exists():
-            raise Exception("Image file did not exist!")
-            
-            
         # Extract time from filename
         date_m = re.findall(r'\d{8}T\d{6}', image_file.name )
         if date_m is None:
-            raise Exception( "Could not extract datetime from image file name!" )
+            print( "Could not extract datetime from image file name: %s!" % image_file.name )
+            continue
+        elif len(date_m) == 0:
+            print( "Could not extract datetime from image file name: %s!" % image_file.name )
+            continue
+            
         dt_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8], date_m[0][9:11], date_m[0][11:13], date_m[0][13:15])
         dt = datetime.strptime(dt_str, '%Y/%m/%dT%H:%M:%S')
         # Get time 
