@@ -86,6 +86,10 @@ with open(args.geo_file) as f:
         data = json.load(f)
         try:
             geo_file_geom = data['type']
+
+            if geo_file_geom == 'FeatureCollection':
+                geo_file_geom = data['features'][0]['geometry']['type']
+
             geo_file_geom in ['Point', 'FeatureCollection']
         except:
             raise ValueError('\nError: A GeoJSON file must contain POINT or POLYGON geometry\n')
@@ -102,8 +106,8 @@ with open(args.geo_file) as f:
 coord_str = ''
 
 if geo_file_geom == 'Point':
-    coord_str = 'point%28' + '%.1f' % data['coordinates'][0] + '+' \
-                + '%.1f' % data['coordinates'][1] + '%29'
+    coord_str = 'point%28' + '%.1f' % data['features'][0]['geometry']['coordinates'][0] + '+' \
+                + '%.1f' % data['features'][0]['geometry']['coordinates'][1] + '%29'
 
 if geo_file_geom == 'FeatureCollection':
 

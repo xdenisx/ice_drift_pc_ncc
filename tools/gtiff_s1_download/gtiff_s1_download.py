@@ -67,7 +67,7 @@ input_gtiff_files = sys.argv[1]
 out_s1_path = sys.argv[2]
 
 # Acquire maximum number of hours apart from image that a s1 image should be retrieved
-max_hours = "6"
+max_hours = "24"
 if len(sys.argv) >= 4:
     max_hours = sys.argv[3]
 min_hours = "0"
