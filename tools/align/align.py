@@ -18,6 +18,7 @@ import numpy as np
 import csv
 import sys
 import xml.etree.ElementTree
+sys.path.append("../geolocation_grid")
 from LocationMapping import LocationMapping
 # import glob
 # import os
