@@ -1548,8 +1548,8 @@ if __name__ == '__main__':
     calc_img_entropy = False
 
     #ent_spikes_dm_S1A_EW_GRDM_1SDH_20150114T133134_20150114T133234_004168_0050E3_8C66_HV_S1A_EW_GRDM_1SDH_20150115T025040_20150115T025140_004176_005114_5C27_HV
-    d1 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', Conf.f1_name)[0]
-    d2 = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', Conf.f2_name)[0]
+    d1 = re.findall(r'\d\d\d\d\d\d\d\d\w\d\d\d\d\d\d', Conf.f1_name)[0]
+    d2 = re.findall(r'\d\d\d\d\d\d\d\d\w\d\d\d\d\d\d', Conf.f2_name)[0]
 
     # Calculate entropy
     if calc_img_entropy:

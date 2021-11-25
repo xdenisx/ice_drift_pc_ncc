@@ -1,7 +1,6 @@
 import time
 import os.path
 import re
-from skimage import io
 import cv2
 from osgeo import gdal
 
@@ -84,8 +83,8 @@ class Config(object):
 		assert (os.path.isfile(self.f2_name)), 'filename2 not found: "' + self.f2_name + '"'
 
 		# out file name and dir
-		self.f1_date = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', self.f1_name)[0]
-		self.f2_date = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', self.f2_name)[0]
+		self.f1_date = re.findall(r'\d\d\d\d\d\d\d\d\w\d\d\d\d\d\d', self.f1_name)[0]
+		self.f2_date = re.findall(r'\d\d\d\d\d\d\d\d\w\d\d\d\d\d\d', self.f2_name)[0]
 		self.out_fname = '%s_%s' % (self.f1_date, self.f2_date)
 
 		os.makedirs(self.res_dir, exist_ok=True)
@@ -93,8 +92,8 @@ class Config(object):
 		if self.plot_correlation_peaks:
 			os.makedirs(self.res_peaks_plot_dir, exist_ok=True)
 
-		self.img1 = io.imread(self.f1_name, 'L')
-		self.img2 = io.imread(self.f2_name, 'L')
+		self.img1 = gdal.Open(self.f1_name).ReadAsArray()
+		self.img2 = gdal.Open(self.f2_name).ReadAsArray()
 
 		if len(self.img1[self.img1 < 0]) > 0 and len(self.img2[self.img2 < 0]) > 0:
 			self.image_intensity_byte_normalization = False
