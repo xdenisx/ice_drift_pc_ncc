@@ -98,8 +98,8 @@ class Config(object):
 		if len(self.img1.shape) > 2:
 			self.img1 = self.img1[0, :, :]
 
-		if len(self.img3.shape) > 2:
-			self.img3 = self.img3[0, :, :]
+		if len(self.img2.shape) > 2:
+			self.img2 = self.img2[0, :, :]
 
 		if len(self.img1[self.img1 < 0]) > 0 and len(self.img2[self.img2 < 0]) > 0:
 			self.image_intensity_byte_normalization = False
