@@ -716,6 +716,14 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
 
     print('Geojson creation success!\n')
 
+def export_to_text(x1, y1, u, v, output_path):
+    print('\nStart exporting to vector file...')
+
+    with open(output_path, 'w') as f:
+        for i in range(len(x1)):
+            f.write('%.1f %.1f %.1f %.1f\n' % (x1[i], y1[i], u[i], v[i]))
+    print('Text file creation success!\n')
+
 def calc_distance(lon1, lat1, lon2, lat2):
     import pyproj
     geod = pyproj.Geod(ellps="WGS84")
@@ -1476,6 +1484,10 @@ if __name__ == '__main__':
     export_to_vector(Conf.f1_name, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
                     '%s/vec/%s_ICEDRIFT_%s.json' % (Conf.res_dir, files_pref, Conf.out_fname),
                     gridded=False, data_format='geojson')
+
+    # Text file
+    export_to_text(Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
+                     '%s/vec/%s_ICEDRIFT_%s.txt' % (Conf.res_dir, files_pref, Conf.out_fname))
 
     ################
     # Geotiff
