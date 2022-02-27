@@ -3,6 +3,7 @@ from osgeo import gdal
 import matplotlib.pyplot as plt
 from datetime import datetime
 from sklearn.neighbors import KDTree
+import numpy as np
 
 class CalcDefo(object):
 	def __init__(self, Conf, Calc, Filter):
@@ -65,9 +66,9 @@ class CalcDefo(object):
 					# Average neighbors
 					req_data = np.array((self.Calc.row_2d[r, c], self.Calc.col_2d[r, c])).reshape(1, -1)
 
-					nn = vector_start_tree.query_radius(req_data, r=300)[0]
-					u_2d[r, c] = np.nanmean(u_2d.ravel()[nn])
-					v_2d[r, c] = np.nanmean(v_2d.ravel()[nn])
+					nn = vector_start_tree.query_radius(req_data, r=200)[0]
+					u_2d[r, c] = np.nanmedian(u_2d.ravel()[nn])
+					v_2d[r, c] = np.nanmedian(v_2d.ravel()[nn])
 
 		# Median vectors
 		'''
@@ -197,7 +198,7 @@ class CalcDefo(object):
 						and np.isnan(dy[i - 1, j]) == False and np.isnan(dy[i + 1, j]) == False
 						and (np.isnan(dx[i, j]) == False or np.isnan(dy[i, j]) == False)):
 					m_div[i, j] = 0.5 * ((dx[i, j + 1] - dx[i, j - 1]) + (dy[i - 1, j] - dy[i + 1, j])) / defo_cell_size_cm
-					print('dx[i,j+1]: %s    div: %s' % (dx[i, j + 1], m_div[i, j]))
+					#print('dx[i,j+1]: %s    div: %s' % (dx[i, j + 1], m_div[i, j]))
 
 				# Curl
 				if (np.isnan(dy[i, j + 1]) == False and np.isnan(dy[i, j - 1]) == False and
