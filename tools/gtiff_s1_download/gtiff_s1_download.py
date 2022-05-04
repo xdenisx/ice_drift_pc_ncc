@@ -87,7 +87,7 @@ grd_mode = 'GRD_MD'
 temp_json_fname = f'{out_s1_path}/temp.json'
 
 # Create directory for meta links
-os.makedirs( f'{out_s1_path}/metalinks', exist_ok=True)
+os.makedirs(f'{out_s1_path}/metalinks', exist_ok=True)
 
 # Loop through all input files
 for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
@@ -113,7 +113,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             features.append(Feature(geometry=poly, properties={"test": "test"}))
 
             feature_collection = FeatureCollection(features)
-            with open( temp_json_fname, 'w') as f:
+            with open(temp_json_fname, 'w') as f:
                 dump(feature_collection, f)
 
             # Download metadata

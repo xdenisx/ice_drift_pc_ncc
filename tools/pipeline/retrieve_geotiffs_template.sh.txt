@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Bash script for executing the L-C image alignment pipeline
+
+
+
+# ---------------------------------------
+# ------------ Start snippet ------------
+# ---------------------------------------
+
+# Store current directory
+CUR_DIR=$PWD
+
+
+
+
+
+
+# ----------------------------------------------------------------------
+# ------------ Set environment variables ---------------
+# ----------------------------------------------------------------------
+
+# Define root path of ALOS raw images
+ALOS_RAW_PATH=${CUR_DIR}/raw/ALOS2/zip
+# Define root path of ALOS geotiff images
+ALOS_GEOTIFF_PATH=${CUR_DIR}/geotiff/ALOS2/
+# Define root path to place s1 raw images
+S1_RAW_PATH=${CUR_DIR}/raw/S1/zip
+# Define root path of s1 geotiff images
+S1_GEOTIFF_PATH=${CUR_DIR}/geotiff/S1/
+# Define root path of ERA5 temperature data
+ERA5_PATH=${CUR_DIR}/ERA5/
+
+# Define platform for S1
+S1_PLATFORM=Sentinel-1A,Sentinel-1B
+# Define polarization for S1
+S1_POLARIZATION=HH+HV
+# Define resolution [m/pixel]
+RESOLUTION=100
+# Define projection (gdal code)
+PROJECTION=5041
+# Minimum number of hours apart
+MIN_HOURS_DELTA=0
+# Maximum number of hours apart
+MAX_HOURS_DELTA=8
+
+
+# ----------------------------------------------------------------------
+# ------------ Calibrate and generate Geotiff from ALOS2 ---------------
+# ----------------------------------------------------------------------
+
+cd /data/rrs/seaice/esa_rosel/code/ALOS_calibration
+python3 palsar_to_tiff.py $ALOS_RAW_PATH $ALOS_GEOTIFF_PATH $RESOLUTION $PROJECTION
+
+
+# ----------------------------------------------------------------------
+# ---------------- Acquire temperatures for region ---------------------
+# ----------------------------------------------------------------------
+
+#cd /data/rrs/seaice/esa_rosel/code/ice_drift_pc_ncc/tools/ERA5
+cd /home/denis/git/ice_drift_pc_ncc/tools/ERA5
+python3 ERA5ForTiff.py $ALOS_GEOTIFF_PATH $ERA5_PATH 2m_temperature 24 $MAX_HOURS_DELTA
+
+
+# ----------------------------------------------------------------------
+# ------------ Download s1 images matching geotiffs --------------------
+# ----------------------------------------------------------------------
+
+
+cd /data/rrs/seaice/esa_rosel/code/ice_drift_pc_ncc/tools/gtiff_s1_download
+python3 gtiff_s1_download.py $ALOS_GEOTIFF_PATH $S1_RAW_PATH $MAX_HOURS_DELTA $MIN_HOURS_DELTA $S1_PLATFORM $S1_POLARIZATION 
+
+
+# ----------------------------------------------------------------------
+# ------------ Calibrate and generate Geotiff from s1 ------------------
+# ----------------------------------------------------------------------
+
+
+# Define if date should be added to the file name
+S1_DATE_IN_FILENAME=0
+cd /data/rrs/seaice/esa_rosel/code/ice_drift_pc_ncc/tools/s1_L1_to_tiff
+python3 s1_L1_to_tiff.py $S1_RAW_PATH $S1_GEOTIFF_PATH $S1_DATE_IN_FILENAME $RESOLUTION $PROJECTION
+
+
+
+
+# ---------------------------------------
+# ------------ End snippet --------------
+# ---------------------------------------
+
+
+
+# Navigate home again
+cd $CUR_DIR
+
+
+
+
