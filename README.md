@@ -1,7 +1,7 @@
 # Sea ice drift retrieval from pair of successive SAR images
 Ice drift retrieval algorithm based on combination of normilized cross-correlation and phase correlation
 
-Programmed by: Denis Demchev, Anton Volkov
+Programmed by: Denis Demchev, Anders Hildeman, Eduard Kazakov
 
 1. The main script:
 cc_bm_parallel_pyr_dev.py
