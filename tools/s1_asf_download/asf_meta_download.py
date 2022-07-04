@@ -114,6 +114,13 @@ if geo_file_geom == 'Polygon':
         coord_str += '%.2f%s%.2f' % (coord[0], '%20', coord[1])
     coord_str = 'polygon%28%28' + coord_str + '%29%29'
 
+if geo_file_geom == 'MultiPolygon':
+    for coord in data['features'][0]['geometry']['coordinates'][0][0]:
+        if len(coord_str) > 0:
+            coord_str += ','
+        coord_str += '%.2f%s%.2f' % (coord[0], '%20', coord[1])
+    coord_str = 'polygon%28%28' + coord_str + '%29%29'
+
 if geo_file_geom == 'Point':
     coord_str = 'point%28' + '%.1f' % data['features'][0]['geometry']['coordinates'][0] + '+' \
                 + '%.1f' % data['features'][0]['geometry']['coordinates'][1] + '%29'

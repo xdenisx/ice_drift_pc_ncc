@@ -55,6 +55,7 @@ class CalcDefo(object):
 			v_2d[ii, jj] = vvv_f[ch]
 
 		# Replace nan vectors with nearest values (within 300 pixels)
+		'''
 		print('Start interpolation of drift data')
 		vector_start_data = np.vstack((self.Calc.row_2d.ravel(), self.Calc.col_2d.ravel())).T
 		vector_start_tree = KDTree(vector_start_data)
@@ -69,6 +70,7 @@ class CalcDefo(object):
 					nn = vector_start_tree.query_radius(req_data, r=200)[0]
 					u_2d[r, c] = np.nanmedian(u_2d.ravel()[nn])
 					v_2d[r, c] = np.nanmedian(v_2d.ravel()[nn])
+		'''
 
 		# Median vectors
 		'''
@@ -107,7 +109,7 @@ class CalcDefo(object):
 																out_png_name='test_med.png')
 		'''
 
-		return mag_speed, divergence, curl, shear, total_deform
+		return mag_speed, divergence, curl, shear, total_deform, u_2d, v_2d
 
 	def calculate(self, dx, dy,
 				normalization=True,

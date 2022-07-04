@@ -724,6 +724,11 @@ def export_to_text(x1, y1, u, v, output_path):
             f.write('%.1f %.1f %.1f %.1f\n' % (x1[i], y1[i], u[i], v[i]))
     print('Text file creation success!\n')
 
+def export_to_npz(u_2d, v_2d, output_path):
+    print('\nStart exporting to NPZ file...')
+    np.savez(output_path, u=u_2d, v=v_2d)
+    print('NPZ file creation success!\n')
+
 def calc_distance(lon1, lat1, lon2, lat2):
     import pyproj
     geod = pyproj.Geod(ellps="WGS84")
@@ -1460,7 +1465,7 @@ if __name__ == '__main__':
     # init defo calculator class
     Defo = cc_calc_defo.CalcDefo(Conf, Calc, Filter)
     # calculate deformation from the 2D arrays
-    mag_speed, divergence, curl, shear, total_deform = Defo.calculate_defo()
+    mag_speed, divergence, curl, shear, total_deform, u_2d, v_2d = Defo.calculate_defo()
 
     print('\n### Success!\n')
 
@@ -1488,6 +1493,10 @@ if __name__ == '__main__':
     # Text file
     export_to_text(Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
                      '%s/vec/%s_ICEDRIFT_%s.txt' % (Conf.res_dir, files_pref, Conf.out_fname))
+
+    # NPZ file
+    export_to_npz(u_2d, v_2d,
+                  '%s/vec/%s_ICEDRIFT_%s.npz' % (Conf.res_dir, files_pref, Conf.out_fname))
 
     ################
     # Geotiff
