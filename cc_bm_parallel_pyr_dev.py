@@ -607,7 +607,7 @@ def outliers_filtering(x1, y1, uu, vv, cc, radius=256, angle_difference=5, lengt
 
     return x1, y1, uu, vv, cc
 
-def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_format='geojson'):
+def export_to_vector(gtiff, x1, y1, u, v, cc, output_path, gridded=False, data_format='geojson'):
     print('\nStart exporting to vector file...')
     if data_format not in ['geojson', 'shp']:
         print('Invalid format')
@@ -691,7 +691,8 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
                                                        'lat2': lat2,
                                                        'lon2': lon2,
                                                        'drift_m': mag,
-                                                       'azimuth': az})
+                                                       'azimuth': az,
+                                                       'cor': cc[i]})
                 features.append(new_line)
 
     if data_format == 'shp':
@@ -716,12 +717,12 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
 
     print('Geojson creation success!\n')
 
-def export_to_text(x1, y1, u, v, output_path):
+def export_to_text(x1, y1, u, v, cc, output_path):
     print('\nStart exporting to vector file...')
 
     with open(output_path, 'w') as f:
         for i in range(len(x1)):
-            f.write('%.1f %.1f %.1f %.1f\n' % (x1[i], y1[i], u[i], v[i]))
+            f.write('%.1f %.1f %.1f %.1f %.1f \n' % (x1[i], y1[i], u[i], v[i], cc[i]))
     print('Text file creation success!\n')
 
 def calc_distance(lon1, lat1, lon2, lat2):
@@ -1435,6 +1436,7 @@ if __name__ == '__main__':
     Filter = cc_calc_drift_filter.CalcDriftFilter(Conf)
     # filter
     Cnt = Filter.filter_outliers(results)
+    #Filter.filter_by_correlation()
 
     # Filter land vectors
     print('\nLand mask filtering...')
@@ -1481,12 +1483,12 @@ if __name__ == '__main__':
         pass
 
     # Vector
-    export_to_vector(Conf.f1_name, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
+    export_to_vector(Conf.f1_name, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
                     '%s/vec/%s_ICEDRIFT_%s.json' % (Conf.res_dir, files_pref, Conf.out_fname),
                     gridded=False, data_format='geojson')
 
     # Text file
-    export_to_text(Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
+    export_to_text(Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
                      '%s/vec/%s_ICEDRIFT_%s.txt' % (Conf.res_dir, files_pref, Conf.out_fname))
 
     ################

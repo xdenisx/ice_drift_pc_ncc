@@ -108,7 +108,6 @@ class CalcDriftFilter(object):
 		xxx_f, yyy_f, uuu_f, vvv_f, ccc_f = np.take(xxx, idxs_not_nan)[0], np.take(yyy, idxs_not_nan)[0], \
 											np.take(uuu, idxs_not_nan)[0], np.take(vvv, idxs_not_nan)[0], \
 											np.take(ccc, idxs_not_nan)[0]
-
 		if self.Conf.num_iter_outliers > 0:
 			i = 0
 			while i < self.Conf.num_iter_outliers:
@@ -121,7 +120,6 @@ class CalcDriftFilter(object):
 																		angle_neighbours=angle_neighbours,
 																		length_neighbours=length_neighbours)
 				i = i + 1
-
 		self.idxs_not_nan = idxs_not_nan
 		self.xxx_f = xxx_f
 		self.yyy_f = yyy_f
@@ -130,6 +128,33 @@ class CalcDriftFilter(object):
 		self.ccc_f = ccc_f
 
 		return len(uuu_f), len(uuu_f[~np.isnan(uuu_f)])
+
+
+	# Filter low correlation coeff
+	def filter_by_correlation(self):
+		'''Filter low correlation coeff'''
+		'''Modifies class members xxx_f, yyy_f, ...'''
+
+		min_cc_flt = 0.8
+
+		idxs_filt_corr = np.where(self.ccc_f<min_cc_flt)
+
+		# self.xxx_f[idxs_filt_corr][0] = np.NaN
+		# self.yyy_f[idxs_filt_corr] = np.nan
+		self.uuu_f[idxs_filt_corr] = np.nan
+		self.vvv_f[idxs_filt_corr]= np.nan
+		self.ccc_f[idxs_filt_corr]= np.nan
+		idxs_not_nan = np.argwhere(np.isnan(self.ccc_f)==False)
+		self.idxs_not_nan = idxs_not_nan
+
+		# # Get throughout vector list and filter low correlation
+		# for i in range(len(self.ccc_f[:])):
+		# 	if self.ccc_f[i]< min_cc_flt:
+         #        # self.xxx_f[i] = np.NaN
+		# 	    # self.yyy_f[i] = np.NaN
+		# 		self.uuu_f[i] = np.NaN
+		# 		self.vvv_f[i] = np.NaN
+		# 		self.ccc_f[i] = np.NaN
 
 	def filter_iterate(self, x1, y1, uu, vv, cc,
 							radius=256,
