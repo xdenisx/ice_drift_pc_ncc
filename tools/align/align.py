@@ -9,7 +9,8 @@ This script gives functionality to align two geotiff images given a velocity vec
 
 
 import pathlib
-from skimage import transform
+from skimage.transform import PiecewiseAffineTransform, warp
+
 try:
 	from osgeo import gdal
 except:
@@ -20,116 +21,109 @@ import sys
 import xml.etree.ElementTree
 sys.path.append("../geolocation_grid")
 from LocationMapping import LocationMapping
+
 # import glob
 # import os
 # from matplotlib.path import Path
 # from scipy.spatial import ConvexHull
 
 
-
-
-
-def warping( path, output_path, image, trans, padding ):
-    
-    # Create new geotiff file
+def warping(path, output_path, image, trans, padding):
+	# Create new geotiff file
 	new_path = output_path / ("Aligned_" + str(path.name))
 	GTdriver = gdal.GetDriverByName('GTiff')
-	opts = [ "COMPRESS=LZW", "BIGTIFF=YES" ]
-	out = GTdriver.Create( str(new_path), image.RasterXSize, image.RasterYSize, image.RasterCount, gdal.GDT_Float32, opts )
+	opts = ["COMPRESS=LZW", "BIGTIFF=YES"]
+	out = GTdriver.Create(str(new_path), image.RasterXSize, image.RasterYSize, image.RasterCount, gdal.GDT_Float32,
+						  opts)
 	out.SetGeoTransform(image.GetGeoTransform())
 	out.SetProjection(image.GetProjection())
 	metadata = image.GetMetadata()
-    
-    # Get mapping between coordinates for the given image
-	location_mapping = LocationMapping( image.GetGeoTransform(), image.GetProjection() )
-    
-	# Preallocate output array
-	array = np.zeros( (image.RasterYSize, image.RasterXSize, image.RasterCount), dtype=float )
 
-	for iterBands in range( image.RasterCount ):
-    
-        # Get current raster band
-		band = image.GetRasterBand(int(iterBands+1))
-        # Get name of raster band
+	# Get mapping between coordinates for the given image
+	location_mapping = LocationMapping(image.GetGeoTransform(), image.GetProjection())
+
+	# Preallocate output array
+	array = np.zeros((image.RasterYSize, image.RasterXSize, image.RasterCount), dtype=float)
+
+	for iterBands in range(image.RasterCount):
+
+		# Get current raster band
+		band = image.GetRasterBand(int(iterBands + 1))
+		# Get name of raster band
 		band_name = band.GetDescription()
 		# Get raster array from current band
-		array[:,:, iterBands] = band.ReadAsArray()
-        # Get corresponding band from out raster
-		band_out = out.GetRasterBand(int(iterBands+1))
-        # Set name of band for output
-		band_out.SetDescription( band_name )
-        
-        
-        # If raster band name exists in metadata, warp the geolocationGridPoints
-		if ( band_name in metadata.keys() ):
-            # Get xml from current metadata
+		array[:, :, iterBands] = band.ReadAsArray()
+		# Get corresponding band from out raster
+		band_out = out.GetRasterBand(int(iterBands + 1))
+		# Set name of band for output
+		band_out.SetDescription(band_name)
+
+		# If raster band name exists in metadata, warp the geolocationGridPoints
+		if (band_name in metadata.keys()):
+			# Get xml from current metadata
 			try:
-			    xml_tree = xml.etree.ElementTree.fromstring( metadata[band_name] )
-			    if (xml_tree.tag == 'geolocationGrid'):
-			        # Get all grid points xml elements
-			        gridPoints = list( xml_tree.findall( './geolocationGridPointList/geolocationGridPoint' ) )
-			        # Go through all girdPoint elements
-			        lat = np.zeros( (len(gridPoints)) )
-			        long = np.zeros( (len(gridPoints)) )
-			        ok_grid_points = np.zeros( (len(gridPoints)), dtype = bool )
-			        for iterGridPoints, gridPoint in enumerate(gridPoints):
-			            # Insert current latitude and longitude value
-			            cur_lat = gridPoint.find('./latitude')
-			            cur_long = gridPoint.find('./longitude')
-			            # If the latitude and longitude value actually existed
-			            if cur_lat is not None and cur_long is not None:
-			                # Insert current values in arrays
-			                lat[iterGridPoints] = float(cur_lat.text)
-			                long[iterGridPoints] = float(cur_long.text)
-			                ok_grid_points[iterGridPoints] = True
+				xml_tree = xml.etree.ElementTree.fromstring(metadata[band_name])
+				if (xml_tree.tag == 'geolocationGrid'):
+					# Get all grid points xml elements
+					gridPoints = list(xml_tree.findall('./geolocationGridPointList/geolocationGridPoint'))
+					# Go through all girdPoint elements
+					lat = np.zeros((len(gridPoints)))
+					long = np.zeros((len(gridPoints)))
+					ok_grid_points = np.zeros((len(gridPoints)), dtype=bool)
+					for iterGridPoints, gridPoint in enumerate(gridPoints):
+						# Insert current latitude and longitude value
+						cur_lat = gridPoint.find('./latitude')
+						cur_long = gridPoint.find('./longitude')
+						# If the latitude and longitude value actually existed
+						if cur_lat is not None and cur_long is not None:
+							# Insert current values in arrays
+							lat[iterGridPoints] = float(cur_lat.text)
+							long[iterGridPoints] = float(cur_long.text)
+							ok_grid_points[iterGridPoints] = True
 
-			        # Map geolocation points
-			        x,y = location_mapping.latLon2Raster( np.array(lat), np.array(long) )
-			        points = np.stack( (x,y), axis = 1)
-			        points = trans( points )
-			        ok_grid_points = ok_grid_points & np.all(points >= 0, axis=1)
-			        lat,long = location_mapping.raster2LatLon( points[:, 0], points[:, 1] )
+					# Map geolocation points
+					x, y = location_mapping.latLon2Raster(np.array(lat), np.array(long))
+					points = np.stack((x, y), axis=1)
+					points = trans(points)
+					ok_grid_points = ok_grid_points & np.all(points >= 0, axis=1)
+					lat, long = location_mapping.raster2LatLon(points[:, 0], points[:, 1])
 
-			        # Go through all grid points again
-			        for iterGridPoints, gridPoint in enumerate(gridPoints):
-                        # If current grid point is marked as 'ok'
-			            if ok_grid_points[iterGridPoints]:
-			                gridPoint.find('./latitude').text = str( lat[iterGridPoints] )
-			                gridPoint.find('./longitude').text = str( long[iterGridPoints] )
-			            else:
-			                # Otherwise, remove
-			                xml_tree.find( './geolocationGridPointList' ).remove(gridPoint)
-                            
-			        # Write new metadata
-			        metadata[band_name] = xml.etree.ElementTree.tostring( xml_tree )
+					# Go through all grid points again
+					for iterGridPoints, gridPoint in enumerate(gridPoints):
+						# If current grid point is marked as 'ok'
+						if ok_grid_points[iterGridPoints]:
+							gridPoint.find('./latitude').text = str(lat[iterGridPoints])
+							gridPoint.find('./longitude').text = str(long[iterGridPoints])
+						else:
+							# Otherwise, remove
+							xml_tree.find('./geolocationGridPointList').remove(gridPoint)
+
+					# Write new metadata
+					metadata[band_name] = xml.etree.ElementTree.tostring(xml_tree)
 
 
 			except Exception as e:
-			    print(e)
-			    return 1
+				print(e)
+				return 1
 
-        
-	array[array == 0] = np.nan        
-	array_warped = transform.warp( array, trans, mode = padding, cval = np.nan )
+	array[array == 0] = np.nan
+
+	array_warped = warp(array, trans, mode='constant')  # , mode = padding, cval = np.nan )
+
 	array_warped[array_warped == 0] = np.nan
 	# array_warped[~maskOrig] = np.nan
-    
-	for iterBands in range( image.RasterCount ):
+
+	for iterBands in range(image.RasterCount):
 		# Get corresponding band from out raster
-		band_out = out.GetRasterBand(int(iterBands+1))
+		band_out = out.GetRasterBand(int(iterBands + 1))
 		# Write aligned array to output
-		band_out.WriteArray(array_warped[:,:,iterBands])
-    
-	out.SetMetadata( metadata )
+		band_out.WriteArray(array_warped[:, :, iterBands])
+
+	out.SetMetadata(metadata)
 	out.FlushCache()
 	del out
-    
+
 	return 0
-
-
-
-
-
 
 def performAlignment( path1, path2, deformation_path, output_path, transform_type = "piecewise-affine", padding = "constant", polynomial_order = 2 ):
 	"""
@@ -138,12 +132,12 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 
 	# Open first image and acquire raster as array
 	image1 = gdal.Open(str(path1))
-	
+
 	# Open second  image and acquire raster as array
 	image2 = gdal.Open(str(path2))
-	
+
 	# Get deformation data as original pixel locations in image1 and new pixel locations in image1
-	try: 
+	try:
 		with open( deformation_path ) as csvfile:
 			csvreader = csv.reader(csvfile)
 			deformations = np.array( [ row for row in csvreader ] ).astype(float)
@@ -152,23 +146,33 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	deformations = deformations[ ~np.any( np.isnan(deformations), axis=1 ), : ]
 	orig_locs = deformations[:,[1,0]]
 	new_locs = deformations[:,[3,2]] + orig_locs
-	
+
 	# Acquire transformation given by deformation
 	try:
 		print("Computing transformation.")
 		trans = None
 		invTrans = None
+
+		p = PiecewiseAffineTransform()
+
+		if transform_type == "polynomial":
+			p.estimate(src=orig_locs, dst=new_locs, order=polynomial_order)
+		else:
+			p.estimate(src=orig_locs, dst=new_locs)
+
+		'''
+		# for old version of skimage 
 		if transform_type == "polynomial":
 			trans = transform.estimate_transform( transform_type, src = orig_locs, dst = new_locs, order = polynomial_order )
 			invTrans = transform.estimate_transform( transform_type, dst = orig_locs, src = new_locs, order = polynomial_order )
 		else:
 			trans = transform.estimate_transform( transform_type, src = orig_locs, dst = new_locs )
 			invTrans = trans.inverse
-
+		'''
 	except:
 		return 1
 
-	# # Acquire convex hulls 
+	# # Acquire convex hulls
 	# print("Acquiring convex hulls.")
 	# maskOrig = None
 	# maskNew = None
@@ -197,36 +201,33 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	# except:
 	# 	return 1
 
-	
 	# Transform image1 raster array
 	try:
 		print("Warping " + str(path1.name))
-        
-		if warping( path1, output_path, image1, invTrans, padding ):
-		    return 1
+
+		if warping(path1, output_path, image1, p.inverse, padding):
+			return 1
 
 	except Exception as e:
 		print(str(e))
 		return 1
-    
+
 	# Transform image2 raster array
 	try:
 		print("Warping " + str(path2.name))
-        
-		if warping( path2, output_path, image2, trans, padding ):
-		    return 1
+
+		if warping(path2, output_path, image2, p, padding):
+			return 1
 
 	except Exception as e:
 		print(str(e))
 		return 1
-	
-
 
 	return 0
 
 
 
-def handlePair( image_path, deformation_path, output_path, transform_type, poly_order  ):
+def handlePair( image_path, deformation_path, output_path, transform_type, poly_order ):
 	"""
 	Param 1: Path to directory to image pair.
 	Param 2: Path to main directory of drift results for specific pair.
@@ -246,15 +247,15 @@ def handlePair( image_path, deformation_path, output_path, transform_type, poly_
 	deformation_path = list(deformation_path.glob( 'output/*.csv' ))
 	if len(deformation_path ) != 1:
 		print( "Did not find .csv file for %s" % str(deformation_path)  )
-		return 
+		return
 	deformation_path = deformation_path[0]
-	# Create directory 
+	# Create directory
 	try:
 		output_path.mkdir()
 	except:
 		return
-	
-	# Align images and save 
+
+	# Align images and save
 	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order )
 
 
@@ -278,6 +279,7 @@ if __name__ == "__main__":
 	if len(sys.argv) >= 6:
 		poly_order = sys.argv[5]
 	poly_order = int(poly_order)
+
 	print("Aligning using method: %s" % transform_type )
 
 	# Root image path
@@ -292,14 +294,14 @@ if __name__ == "__main__":
 		if iter_path.is_dir():
 			# Get directory name
 			dir_name = iter_path.name
-			
+
 			# Find directory with the same name in deformation path
 			iter_deform_path = deformation_path.joinpath(dir_name)
 			if (iter_deform_path.exists()):
 				iter_output_path = output_path.joinpath( dir_name )
 				# If subdirectory already exists
 				if (iter_output_path.exists()):
-					# skip 
+					# skip
 					continue
 					# # Remove old version
 					# for iterremove in iter_output_path.glob('*'):
