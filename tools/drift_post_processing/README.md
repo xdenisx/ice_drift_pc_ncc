@@ -2,8 +2,8 @@
 
 > #### Basic functionality of the package:
 >
-> - Operates with output from different ice drift algorithms (currently supports Chalmers ice drift algorithm output).
-> - Georeferencing actual and inverse ice drift.
+> - Operates with output from different ice drift algorithms (currently supports Chalmers ice drift algorithm output)
+> - Georeferencing actual and inverse ice drift
 > - Outliers filtering based on local homogenity criteria (direction and length, for details see Demchev et. al 2017)
 > - Ice deformation calculation
 > - Apllying land mask
@@ -26,7 +26,7 @@ d.export_vector(out_path='/data/rrs/seaice/esa_rosel/temp', filtered=True)
 d.calc_defo(out_path='/data/rrs/seaice/esa_rosel/temp', land_mask=True)
 ```
 
-Code: Denis Demchev
+Code: Denis Demchev, Anders Hildeman
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
