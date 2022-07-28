@@ -1,38 +1,16 @@
-import matplotlib.pyplot as plt
-from pyproj import Proj, transform
-import pyproj
-from scipy.io import loadmat
-import sys
-import os
-import datetime
-import numpy as np
-import geojson
-from osgeo import gdal, osr, gdal_array, ogr, gdalconst
-import sklearn.neighbors
-import shapefile as sf
-import re
-import pyproj
-import warnings
-import os
-from datetime import datetime, timedelta
-warnings.filterwarnings("ignore")
-
-sys.path.append("/data/rrs/seaice/esa_rosel/code/ice_drift_pc_ncc/tools/geolocation_grid")
-from LocationMapping import LocationMapping
-
 class driftField:
     '''
     Class for ice drift field processing
     '''
 
     def __init__(self, file_path=None, path_to_tiff=None, path_to_tiff2=None, inverse=False,
-                 land_mask_path='/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp'):
-
+                 land_mask_path='/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp', step_pixels=50):
         formats = {'mat': {}, 'nc': {}}
 
+        self.step_pixels = step_pixels
         self.path_to_tiff = path_to_tiff
         self.path_to_tiff2 = path_to_tiff2
-
+        self.inverse = inverse
         self.land_mask_path = land_mask_path
 
         if not self.path_to_tiff is None:
@@ -59,8 +37,6 @@ class driftField:
         else:
             pass
 
-        self.inverse = inverse
-
         self.file_path = file_path
         self.get_dt_str()
 
@@ -80,7 +56,7 @@ class driftField:
             print(f'Sorry, format {self.file_format} is not currently supported')
 
     def get_dt_str(self):
-        '''
+        ''' 
         Get time difference form dates in string format
         '''
         dt1, dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', self.file_path)
@@ -105,8 +81,8 @@ class driftField:
         ll_corner_x = self.tiff_data['gt'][0] + (min(y0)) * pixel_width
         ll_corner_y = self.tiff_data['gt'][3] + (min(x0)) * pixel_height
 
-        self.data['geot'] = (ll_corner_x + shift_x, self.data['step_pixels'] * pixel_width, 0.,
-                             ll_corner_y + shift_y, 0., self.data['step_pixels'] * pixel_height)
+        self.data['geot'] = (ll_corner_x + shift_x, self.step_pixels * pixel_width, 0.,
+                             ll_corner_y + shift_y, 0., self.step_pixels * pixel_height)
 
     def read_tiff_data(self, file_path, pref):
         '''
@@ -165,10 +141,12 @@ class driftField:
             data['dy'] = dy
             data['dx'] = dx
 
-            data['y1'] = p1r + dy
-            data['x1'] = p1c + dx
+            yy1 = p1r + dy
+            xx1 = p1c + dx
+            data['y1'] = yy1.astype('int')
+            data['x1'] = xx1.astype('int')
 
-            if self.inverse is True:
+            if self.inverse == True:
                 data['y0'] = data['y1'].copy()
                 data['x0'] = data['x1'].copy()
 
@@ -186,14 +164,52 @@ class driftField:
                 x0_unq = np.unique(data['x0'])
                 ny, nx = len(y0_unq), len(x0_unq)
 
-            data['y0_2d'] = data['y0'].reshape(ny, nx)
-            data['x0_2d'] = data['x0'].reshape(ny, nx)
-            data['y1_2d'] = data['y1'].reshape(ny, nx)
-            data['x1_2d'] = data['x1'].reshape(ny, nx)
-            data['dy_2d'] = data['dy'].reshape(ny, nx)
-            data['dx_2d'] = data['dx'].reshape(ny, nx)
-            data['cc_2d'] = data['cc'].reshape(ny, nx)
-            data['step_pixels'] = data['y0_2d'][1][0] - data['y0_2d'][0][0]
+            # Make 2D arrays from vectors
+            x_min = np.nanmin(p1c)
+            x_max = np.nanmax(p1c)
+
+            y_min = np.nanmin(p1r)
+            y_max = np.nanmax(p1r)
+
+            stp = self.step_pixels
+            xx = range(x_min, x_max + stp, stp)
+            yy = range(y_min, y_max + stp, stp)
+
+            ny_un, nx_un = np.unique(yy), np.unique(xx)
+            ny, nx = len(ny_un), len(nx_un)
+            yy_2d, xx_2d = np.meshgrid(ny_un, nx_un)
+
+            ddy_2d = np.empty((nx, ny,))
+            ddy_2d[:] = np.nan
+
+            ddx_2d = np.empty((nx, ny,))
+            ddx_2d[:] = np.nan
+
+            yy1_2d = np.empty((nx, ny,))
+            yy1_2d[:] = np.nan
+
+            xx1_2d = np.empty((nx, ny,))
+            xx1_2d[:] = np.nan
+
+            cc_2d = np.empty((nx, ny,))
+            cc_2d[:] = np.nan
+
+            for i in range(y0.shape[0]):
+                idx = np.argwhere((yy_2d == y0[i]) & (xx_2d == x0[i]))
+                ii, jj = idx[0][0], idx[0][1]
+                ddy_2d[ii, jj] = dy[i]
+                ddx_2d[ii, jj] = dx[i]
+                yy1_2d[ii, jj] = yy1[i]
+                xx1_2d[ii, jj] = xx1[i]
+                cc_2d[ii, jj] = cor_coeff[i]
+
+            data['y0_2d'] = yy_2d
+            data['x0_2d'] = xx_2d
+            data['dy_2d'] = ddy_2d
+            data['dx_2d'] = ddx_2d
+            data['y1_2d'] = yy1_2d.astype('int')
+            data['x1_2d'] = xx1_2d.astype('int')
+            data['cc_2d'] = cc_2d
 
             self.data = data
 
@@ -201,8 +217,8 @@ class driftField:
             pixel_width = self.tiff_data['gt'][1]
             pixel_height = self.tiff_data['gt'][-1]
 
-            shift_x = -pixel_width * self.data['step_pixels'] / 2
-            shift_y = -pixel_height * self.data['step_pixels'] / 2
+            shift_x = -pixel_width * self.step_pixels / 2
+            shift_y = -pixel_height * self.step_pixels / 2
 
             if self.inverse == True:
                 self.get_geot(data['y1'], data['x1'], pixel_width, pixel_height, shift_x, shift_y)
@@ -248,7 +264,7 @@ class driftField:
 
             raster_cell_size_cm = 100 * (self.tiff_data['gt'][1] +
                                          abs(self.tiff_data['gt'][-1])) / 2
-            defo_cell_size_cm = self.data['step_pixels'] * raster_cell_size_cm
+            defo_cell_size_cm = self.step_pixels * raster_cell_size_cm
             print(f'Raster cell size (cm): {raster_cell_size_cm}')
             print(f'Deformation product grid step size (cm) {defo_cell_size_cm}')
 
@@ -308,29 +324,29 @@ class driftField:
 
             if land_mask:
                 print('\nApplying land mask...')
-                self.data['mag_speed'] = mag_speed.T
+                self.data['mag_speed'] = mag_speed
                 self.data['mag_speed'][self.data['land_mask'] == 255] = np.nan
-                self.data['div'] = m_div.T
+                self.data['div'] = m_div
                 self.data['div'][self.data['land_mask'] == 255] = np.nan
-                self.data['curl'] = m_curl.T
+                self.data['curl'] = m_curl
                 self.data['curl'][self.data['land_mask'] == 255] = np.nan
-                self.data['shear'] = m_shear.T
+                self.data['shear'] = m_shear
                 self.data['shear'][self.data['land_mask'] == 255] = np.nan
-                self.data['tdef'] = m_tdef.T
+                self.data['tdef'] = m_tdef
                 self.data['tdef'][self.data['land_mask'] == 255] = np.nan
                 print('Done.')
             else:
-                self.data['mag_speed'] = mag_speed.T
-                self.data['div'] = m_div.T
-                self.data['curl'] = m_curl.T
-                self.data['shear'] = m_shear.T
-                self.data['tdef'] = m_tdef.T
+                self.data['mag_speed'] = mag_speed
+                self.data['div'] = m_div
+                self.data['curl'] = m_curl
+                self.data['shear'] = m_shear
+                self.data['tdef'] = m_tdef
 
             # Save to geotiff files
             os.makedirs(f'{out_path}', exist_ok=True)
             base_fname = os.path.basename(self.file_path)[:-4]
             for par in defo_params:
-                if self.inverse:
+                if self.inverse == True:
                     self.export_geotiff(d.data[par], f'{out_path}/inv_{par}_{base_fname}.tiff')
                 else:
                     self.export_geotiff(d.data[par], f'{out_path}/{par}_{base_fname}.tiff')
@@ -362,8 +378,9 @@ class driftField:
 
     def export_vector(self, data_format='geojson', out_path='.', filtered=True):
         '''
-        Export vetors to geojson/shp format
+        Export vetors to geojson/shp format 
         '''
+        print(filtered)
 
         if hasattr(self, 'tiff_data'):
             geod = pyproj.Geod(ellps='WGS84')
@@ -388,7 +405,7 @@ class driftField:
             x0, y0 = self.data['x0_2d'].copy(), d.data['y0_2d'].copy()
             x1, y1 = self.data['x1_2d'].copy(), d.data['y1_2d'].copy()
 
-            if filtered:
+            if filtered == True:
                 x1[self.data['outliers_mask'] == False] = 9999
                 y1[self.data['outliers_mask'] == False] = 9999
             else:
@@ -401,7 +418,6 @@ class driftField:
                         lat0 = self.tiff_data['lats'][x0[i, j], y0[i, j]]
                         lon1 = self.tiff_data['lons'][x1[i, j], y1[i, j]]
                         lat1 = self.tiff_data['lats'][x1[i, j], y1[i, j]]
-
                         try:
                             az, az2, mag = geod.inv(lon0, lat0, lon1, lat1)
                             mag = float(mag)
@@ -449,7 +465,7 @@ class driftField:
             if data_format == 'geojson':
                 try:
                     collection = geojson.FeatureCollection(features=features)
-                    if self.inverse:
+                    if self.inverse == True:
                         output_geojson = open(f'{out_path}/inv_fltrd_{os.path.basename(self.file_path)[:-4]}.geojson',
                                               'w')
                     else:
@@ -500,18 +516,11 @@ class driftField:
         Outliers filtering based on local homogenity criteria (vector direction and length)
         '''
 
-        y0, x0, dy, dx = self.data['y0'], self.data['x0'], self.data['dy'], self.data['dx']
+        y0, x0, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), self.data[
+            'dx_2d'].ravel()
 
         vv = dy
         uu = dx
-
-        if len(y0.shape) > 1 or len(x0.shape) > 1 or len(dy.shape) > 1 or len(dx.shape) > 1:
-            y0 = y0.ravel()
-            x0 = x0.ravel()
-            uu = dy.ravel()
-            vv = dx.ravel()
-        else:
-            pass
 
         idx_mask = []
 
@@ -529,13 +538,14 @@ class driftField:
 
             # First, check if vector vertices lie over NaN pixels of SAR images
             # X-axes from the algorithm output corresponds to numpy's Y-axis (rename it?)
-            if np.isnan(self.tiff_data['data'][self.data['x1'][i], self.data['y1'][i]]) or np.isnan(
+            if np.isnan(
+                    self.tiff_data['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]) or np.isnan(
                     self.tiff_data2['data'][self.data['x1'][i], self.data['y1'][i]]):
                 idx_mask.append(i)
             else:
                 # Keep 'small' vectors (below threshold th_small_length)
                 if np.hypot(uu[i], vv[i]) > th_small_length and not np.isnan(uu[i]):
-                    req_data = np.array((self.data['y0'][i], self.data['x0'][i])).reshape(1, -1)
+                    req_data = np.array((self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i])).reshape(1, -1)
                     # Getting number of neighbours
                     num_nn = vector_start_tree.query_radius(req_data, r=radius, count_only=True)
                     # print('Number of neighbors: %s' % num_nn)
@@ -580,7 +590,7 @@ class driftField:
         try:
             if hasattr(self, att):
                 if par in getattr(self, att):
-                    cols, rows = self.data[par].shape
+                    rows, cols = self.data[par].shape
                     driver = gdal.GetDriverByName('MEM')
                     dst_ds = driver.Create(
                         '',
