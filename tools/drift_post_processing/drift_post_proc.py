@@ -19,6 +19,7 @@ sys.path.append("/data/rrs/seaice/esa_rosel/code/ice_drift_pc_ncc/tools/geolocat
 from LocationMapping import LocationMapping
 warnings.filterwarnings("ignore")
 
+
 class driftField:
     '''
     Class for ice drift field processing
@@ -77,7 +78,7 @@ class driftField:
             print(f'Sorry, format {self.file_format} is not currently supported')
 
     def get_dt_str(self):
-        ''' 
+        '''
         Get time difference form dates in string format
         '''
         dt1, dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', self.file_path)
@@ -164,6 +165,10 @@ class driftField:
 
             yy1 = p1r + dy
             xx1 = p1c + dx
+
+            xx1[xx1 < 0] = 9999
+            yy1[yy1 < 0] = 9999
+
             data['y1'] = yy1.astype('int')
             data['x1'] = xx1.astype('int')
 
@@ -215,8 +220,8 @@ class driftField:
             cc_2d = np.empty((nx, ny,))
             cc_2d[:] = np.nan
 
-            for i in range(y0.shape[0]):
-                idx = np.argwhere((yy_2d == y0[i]) & (xx_2d == x0[i]))
+            for i in range(p1r.shape[0]):
+                idx = np.argwhere((yy_2d == p1r[i]) & (xx_2d == p1c[i]))
                 ii, jj = idx[0][0], idx[0][1]
                 ddy_2d[ii, jj] = dy[i]
                 ddx_2d[ii, jj] = dx[i]
@@ -368,9 +373,9 @@ class driftField:
             base_fname = os.path.basename(self.file_path)[:-4]
             for par in defo_params:
                 if self.inverse == True:
-                    self.export_geotiff(d.data[par], f'{out_path}/inv_{par}_{base_fname}.tiff')
+                    self.export_geotiff(self.data[par], f'{out_path}/inv_{par}_{base_fname}.tiff')
                 else:
-                    self.export_geotiff(d.data[par], f'{out_path}/{par}_{base_fname}.tiff')
+                    self.export_geotiff(self.data[par], f'{out_path}/{par}_{base_fname}.tiff')
         else:
             print('Could not process the data. Please provide a path to geotiff file and grid cell size.')
 
@@ -399,9 +404,8 @@ class driftField:
 
     def export_vector(self, data_format='geojson', out_path='.', filtered=True):
         '''
-        Export vetors to geojson/shp format 
+        Export vetors to geojson/shp format
         '''
-        print(filtered)
 
         if hasattr(self, 'tiff_data'):
             geod = pyproj.Geod(ellps='WGS84')
@@ -423,8 +427,8 @@ class driftField:
             if data_format == 'geojson':
                 features = []
 
-            x0, y0 = self.data['x0_2d'].copy(), d.data['y0_2d'].copy()
-            x1, y1 = self.data['x1_2d'].copy(), d.data['y1_2d'].copy()
+            x0, y0 = self.data['x0_2d'].copy(), self.data['y0_2d'].copy()
+            x1, y1 = self.data['x1_2d'].copy(), self.data['y1_2d'].copy()
 
             if filtered == True:
                 x1[self.data['outliers_mask'] == False] = 9999
@@ -437,38 +441,41 @@ class driftField:
                     if not y1[i, j] == 9999 and not x1[i, j] == 9999:
                         lon0 = self.tiff_data['lons'][x0[i, j], y0[i, j]]
                         lat0 = self.tiff_data['lats'][x0[i, j], y0[i, j]]
-                        lon1 = self.tiff_data['lons'][x1[i, j], y1[i, j]]
-                        lat1 = self.tiff_data['lats'][x1[i, j], y1[i, j]]
                         try:
-                            az, az2, mag = geod.inv(lon0, lat0, lon1, lat1)
-                            mag = float(mag)
-                            if az <= 180.0:
-                                az = az + 360.0
+                            lon1 = self.tiff_data['lons'][x1[i, j], y1[i, j]]
+                            lat1 = self.tiff_data['lats'][x1[i, j], y1[i, j]]
+                            try:
+                                az, az2, mag = geod.inv(lon0, lat0, lon1, lat1)
+                                mag = float(mag)
+                                if az <= 180.0:
+                                    az = az + 360.0
+                            except:
+                                mag, az = 999., 999.
+
+                            if data_format == 'shp':
+                                w.line([[[lon1, lat1], [lon2, lat2]]])
+                                w.record(str(i), str(lat0), str(lon0), str(lat1), str(lon1), str(mag), str(az))
+
+                            if data_format == 'geojson':
+                                if lon0 == lon1 and lat0 == lat1:
+                                    ft = geojson.Feature(geometry=geojson.Point([lon0, lat0]),
+                                                         properties={'id': str(i + j),
+                                                                     'lat1': lat0,
+                                                                     'lon1': lon0,
+                                                                     'drift_m': 0.,
+                                                                     'azimuth': None})
+                                else:
+                                    ft = geojson.Feature(geometry=geojson.LineString([(lon0, lat0), (lon1, lat1)]),
+                                                         properties={'id': str(i + j),
+                                                                     'lat1': lat0,
+                                                                     'lon1': lon0,
+                                                                     'lat2': lat1,
+                                                                     'lon2': lon1,
+                                                                     'drift_m': mag,
+                                                                     'azimuth': az})
+                                features.append(ft)
                         except:
-                            mag, az = 999., 999.
-
-                        if data_format == 'shp':
-                            w.line([[[lon1, lat1], [lon2, lat2]]])
-                            w.record(str(i), str(lat0), str(lon0), str(lat1), str(lon1), str(mag), str(az))
-
-                        if data_format == 'geojson':
-                            if lon0 == lon1 and lat0 == lat1:
-                                ft = geojson.Feature(geometry=geojson.Point([lon0, lat0]),
-                                                     properties={'id': str(i + j),
-                                                                 'lat1': lat0,
-                                                                 'lon1': lon0,
-                                                                 'drift_m': 0.,
-                                                                 'azimuth': None})
-                            else:
-                                ft = geojson.Feature(geometry=geojson.LineString([(lon0, lat0), (lon1, lat1)]),
-                                                     properties={'id': str(i + j),
-                                                                 'lat1': lat0,
-                                                                 'lon1': lon0,
-                                                                 'lat2': lat1,
-                                                                 'lon2': lon1,
-                                                                 'drift_m': mag,
-                                                                 'azimuth': az})
-                            features.append(ft)
+                            pass
 
             os.makedirs(f'{out_path}', exist_ok=True)
             if data_format == 'shp':
@@ -557,42 +564,44 @@ class driftField:
             im2_y_max = np.min([y0[i] + vv[i], self.tiff_data['shape'][0] - 1])
             im2_x_max = np.min([x0[i] + uu[i], self.tiff_data['shape'][1] - 1])
 
+            # !TODO: Fix this part for nan areas
             # First, check if vector vertices lie over NaN pixels of SAR images
             # X-axes from the algorithm output corresponds to numpy's Y-axis (rename it?)
-            if np.isnan(
-                    self.tiff_data['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]) or np.isnan(
-                    self.tiff_data2['data'][self.data['x1'][i], self.data['y1'][i]]):
-                idx_mask.append(i)
-            else:
-                # Keep 'small' vectors (below threshold th_small_length)
-                if np.hypot(uu[i], vv[i]) > th_small_length and not np.isnan(uu[i]):
-                    req_data = np.array((self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i])).reshape(1, -1)
-                    # Getting number of neighbours
-                    num_nn = vector_start_tree.query_radius(req_data, r=radius, count_only=True)
-                    # print('Number of neighbors: %s' % num_nn)
+            # if np.isnan(self.tiff_data['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]) or np.isnan(self.tiff_data2['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]):
+            #    idx_mask.append(i)
 
-                    if num_nn[0] < total_neighbours:
-                        idx_mask.append(i)
-                    else:
-                        nn = vector_start_tree.query_radius(req_data, r=radius)
-                        data = np.vstack((uu[nn[0]], vv[nn[0]])).T
+            # if np.isnan(self.tiff_data['data'][self.data['y1_2d'].ravel()[i], self.data['x1_2d'].ravel()[i]]) or np.isnan(self.tiff_data2['data'][self.data['y1_2d'].ravel()[i], self.data['x1_2d'].ravel()[i]]):
+            #    idx_mask.append(i)
+            # else:
+            # Keep 'small' vectors (below threshold th_small_length)
+            if np.hypot(uu[i], vv[i]) > th_small_length and not np.isnan(uu[i]):
+                req_data = np.array((self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i])).reshape(1, -1)
+                # Getting number of neighbours
+                num_nn = vector_start_tree.query_radius(req_data, r=radius, count_only=True)
+                # print('Number of neighbors: %s' % num_nn)
 
-                        num_of_homo_NN = 0
-                        num_of_length_homo_NN = 0
-
-                        for ii in range(num_nn[0]):
-                            # Angle between "this" vector and others
-                            angle_v1_v2 = self.angle_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
-                            # Length between "this" vector and others
-                            diff_v1_v2 = self.length_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
-                            if angle_v1_v2 <= angle_difference:
-                                num_of_homo_NN = num_of_homo_NN + 1
-                            if diff_v1_v2 < length_difference:
-                                num_of_length_homo_NN = num_of_length_homo_NN + 1
-                        if not (num_of_homo_NN >= angle_neighbours) or not (num_of_length_homo_NN >= length_neighbours):
-                            idx_mask.append(i)
+                if num_nn[0] < total_neighbours:
+                    idx_mask.append(i)
                 else:
-                    pass
+                    nn = vector_start_tree.query_radius(req_data, r=radius)
+                    data = np.vstack((uu[nn[0]], vv[nn[0]])).T
+
+                    num_of_homo_NN = 0
+                    num_of_length_homo_NN = 0
+
+                    for ii in range(num_nn[0]):
+                        # Angle between "this" vector and others
+                        angle_v1_v2 = self.angle_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+                        # Length between "this" vector and others
+                        diff_v1_v2 = self.length_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+                        if angle_v1_v2 <= angle_difference:
+                            num_of_homo_NN = num_of_homo_NN + 1
+                        if diff_v1_v2 < length_difference:
+                            num_of_length_homo_NN = num_of_length_homo_NN + 1
+                    if not (num_of_homo_NN >= angle_neighbours) or not (num_of_length_homo_NN >= length_neighbours):
+                        idx_mask.append(i)
+            else:
+                pass
 
         tt = list(set(idx_mask))
         iidx_mask = np.array(tt)
