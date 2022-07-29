@@ -25,14 +25,13 @@ class driftField:
     Class for ice drift field processing
     '''
 
-    def __init__(self, file_path=None, path_to_tiff=None, path_to_tiff2=None, inverse=False,
+    def __init__(self, file_path=None, path_to_tiff=None, path_to_tiff2=None,
                  land_mask_path='/home/denis/git/ice_drift_pc_ncc/data/ne_50m_land.shp', step_pixels=50):
         formats = {'mat': {}, 'nc': {}}
 
         self.step_pixels = step_pixels
         self.path_to_tiff = path_to_tiff
         self.path_to_tiff2 = path_to_tiff2
-        self.inverse = inverse
         self.land_mask_path = land_mask_path
 
         if not self.path_to_tiff is None:
@@ -172,30 +171,16 @@ class driftField:
             data['y1'] = yy1.astype('int')
             data['x1'] = xx1.astype('int')
 
-            if self.inverse == True:
-                data['y0'] = data['y1'].copy()
-                data['x0'] = data['x1'].copy()
-
-                data['y1'] = p1r
-                data['x1'] = p1c
-
-                data['dy'] = data['dy'].copy() * (-1)
-                data['dx'] = data['dx'].copy() * (-1)
-
-                y1_unq = np.unique(data['y1'])
-                x1_unq = np.unique(data['x1'])
-                ny, nx = len(y1_unq), len(x1_unq)
-            else:
-                y0_unq = np.unique(data['y0'])
-                x0_unq = np.unique(data['x0'])
-                ny, nx = len(y0_unq), len(x0_unq)
+            y0_unq = np.unique(data['y0'])
+            x0_unq = np.unique(data['x0'])
+            ny, nx = len(y0_unq), len(x0_unq)
 
             # Make 2D arrays from vectors
-            x_min = np.nanmin(p1c)
-            x_max = np.nanmax(p1c)
+            x_min = np.nanmin(data['x0'])
+            x_max = np.nanmax(data['x0'])
 
-            y_min = np.nanmin(p1r)
-            y_max = np.nanmax(p1r)
+            y_min = np.nanmin(data['y0'])
+            y_max = np.nanmax(data['y0'])
 
             stp = self.step_pixels
             xx = range(x_min, x_max + stp, stp)
@@ -220,8 +205,8 @@ class driftField:
             cc_2d = np.empty((nx, ny,))
             cc_2d[:] = np.nan
 
-            for i in range(p1r.shape[0]):
-                idx = np.argwhere((yy_2d == p1r[i]) & (xx_2d == p1c[i]))
+            for i in range(data['y0'].shape[0]):
+                idx = np.argwhere((yy_2d == data['y0'][i]) & (xx_2d == data['x0'][i]))
                 ii, jj = idx[0][0], idx[0][1]
                 ddy_2d[ii, jj] = dy[i]
                 ddx_2d[ii, jj] = dx[i]
@@ -246,10 +231,7 @@ class driftField:
             shift_x = -pixel_width * self.step_pixels / 2
             shift_y = -pixel_height * self.step_pixels / 2
 
-            if self.inverse == True:
-                self.get_geot(data['y1'], data['x1'], pixel_width, pixel_height, shift_x, shift_y)
-            else:
-                self.get_geot(data['y0'], data['x0'], pixel_width, pixel_height, shift_x, shift_y)
+            self.get_geot(data['y0'], data['x0'], pixel_width, pixel_height, shift_x, shift_y)
 
         else:
             print('Could not process the data. Please provide path to geotiff file and grid cell size.')
@@ -373,10 +355,7 @@ class driftField:
             os.makedirs(f'{out_path}', exist_ok=True)
             base_fname = os.path.basename(self.file_path)[:-4]
             for par in defo_params:
-                if self.inverse == True:
-                    self.export_geotiff(self.data[par], f'{out_path}/inv_{par}_{base_fname}.tiff')
-                else:
-                    self.export_geotiff(self.data[par], f'{out_path}/{par}_{base_fname}.tiff')
+                self.export_geotiff(self.data[par], f'{out_path}/{par}_{base_fname}.tiff')
         else:
             print('Could not process the data. Please provide a path to geotiff file and grid cell size.')
 
@@ -494,17 +473,33 @@ class driftField:
             if data_format == 'geojson':
                 try:
                     collection = geojson.FeatureCollection(features=features)
-                    if self.inverse == True:
-                        output_geojson = open(f'{out_path}/inv_fltrd_{os.path.basename(self.file_path)[:-4]}.geojson',
-                                              'w')
-                    else:
-                        output_geojson = open(f'{out_path}/fltrd_{os.path.basename(self.file_path)[:-4]}.geojson', 'w')
+                    output_geojson = open(f'{out_path}/fltrd_{os.path.basename(self.file_path)[:-4]}.geojson', 'w')
                     output_geojson.write(geojson.dumps(collection))
                     output_geojson.close()
                 except Exception as e:
                     print(f"Error while saving geojson: {e}")
         else:
             print('No georeferencing data found (lons, lats). Could not process the data.')
+
+    def export_txt(self, out_path='.', filtered=True):
+        '''
+        Export drift coordinates in image coordinate system (pixels) to text file
+        '''
+
+        output_txt = f'{out_path}/fltrd_{os.path.basename(self.file_path)[:-4]}.csv'
+
+        if filtered == True:
+            p1c, p1r, dy, dx = self.data['y0_2d'][self.data['outliers_mask'] == mask].ravel(), self.data['x0_2d'][
+                self.data['outliers_mask'] == mask].ravel(), self.data['dy_2d'][
+                                   self.data['outliers_mask'] == mask].ravel(), self.data['dx_2d'][
+                                   self.data['outliers_mask'] == mask].ravel()
+        else:
+            p1c, p1r, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), \
+                               self.data['dx_2d'].ravel()
+
+        with open(output_txt, 'w', encoding='utf-8') as ff:
+            for i in range(len(p1c)):
+                ff.write('%s,%s,%s,%s\n' % (p1r[i], p1c[i], dy[i], dx[i]))
 
     def unit_vector(self, vector):
         ''' Returns the unit vector of the vector
