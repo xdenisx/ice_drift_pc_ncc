@@ -255,7 +255,8 @@ class driftField:
             print('Could not process the data. Please provide path to geotiff file and grid cell size.')
 
     def calc_defo(self, normalization=True, invert_meridional=True, fill_nan=False,
-                  out_path='.', defo_params=['div', 'shear', 'curl', 'tdef'], filtered=True, land_mask=True):
+                  out_path='.', defo_params=['div', 'shear', 'curl', 'tdef', 'mag_speed'], filtered=True,
+                  land_mask=True):
         '''
         Calculate deformation invariants from ice drift components
         '''
@@ -558,11 +559,11 @@ class driftField:
 
         for i in range(0, len(x0), 1):
             # If vector lie on image border
+            im1_y_min = np.max([0, y0[i] + vv[i]])
+            im1_x_min = np.max([0, x0[i] + uu[i]])
+
             im1_y_max = np.min([y0[i] + vv[i], self.tiff_data['shape'][0] - 1])
             im1_x_max = np.min([x0[i] + uu[i], self.tiff_data['shape'][1] - 1])
-
-            im2_y_max = np.min([y0[i] + vv[i], self.tiff_data['shape'][0] - 1])
-            im2_x_max = np.min([x0[i] + uu[i], self.tiff_data['shape'][1] - 1])
 
             # !TODO: Fix this part for nan areas
             # First, check if vector vertices lie over NaN pixels of SAR images
@@ -570,7 +571,7 @@ class driftField:
             # if np.isnan(self.tiff_data['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]) or np.isnan(self.tiff_data2['data'][self.data['x1_2d'].ravel()[i], self.data['y1_2d'].ravel()[i]]):
             #    idx_mask.append(i)
 
-            # if np.isnan(self.tiff_data['data'][self.data['y1_2d'].ravel()[i], self.data['x1_2d'].ravel()[i]]) or np.isnan(self.tiff_data2['data'][self.data['y1_2d'].ravel()[i], self.data['x1_2d'].ravel()[i]]):
+            # if im1_y_min == 0 or im1_x_min == 0 or im1_y_max == (self.tiff_data['shape'][0] - 1) or im1_y_max == (self.tiff_data['shape'][0] - 1) or np.isnan(self.tiff_data['data'][self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i]]) or np.isnan(self.tiff_data['data'][self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i]]):
             #    idx_mask.append(i)
             # else:
             # Keep 'small' vectors (below threshold th_small_length)
@@ -645,3 +646,4 @@ class driftField:
                 print('\nError: An object does not have attribute data.')
         except Exception as e:
             print(f"Error while rasterizing landmask shapefile: {e}")
+
