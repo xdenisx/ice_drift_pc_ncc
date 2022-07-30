@@ -20,6 +20,7 @@ try:
 except:
     import gdal
 
+import os
 from ERA5Downloader import *
 sys.path.append("../geolocation_grid")
 from LocationMapping import LocationMapping
@@ -47,9 +48,10 @@ if __name__ == "__main__":
     if not image_files.exists():
         raise Exception("Image file or folder did not exist!")
     if not output_folder.exists():
-        raise Exception("Output fodler does not exist!")
+        os.makedirs(output_folder, exist_ok=True)
+        #raise Exception("Output fodler does not exist!")
     if not output_folder.is_dir():
-        raise Exception("Output fodler is not a directory!")
+        raise Exception("Output folder is not a directory!")
 
 
     # If image_file is a directory
