@@ -489,17 +489,17 @@ class driftField:
         output_txt = f'{out_path}/fltrd_{os.path.basename(self.file_path)[:-4]}.csv'
 
         if filtered == True:
-            p1c, p1r, dy, dx = self.data['y0_2d'][self.data['outliers_mask'] == mask].ravel(), self.data['x0_2d'][
+            p1r, p1c, dy, dx = self.data['y0_2d'][self.data['outliers_mask'] == mask].ravel(), self.data['x0_2d'][
                 self.data['outliers_mask'] == mask].ravel(), self.data['dy_2d'][
                                    self.data['outliers_mask'] == mask].ravel(), self.data['dx_2d'][
                                    self.data['outliers_mask'] == mask].ravel()
         else:
-            p1c, p1r, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), \
+            p1r, p1c, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), \
                                self.data['dx_2d'].ravel()
 
         with open(output_txt, 'w', encoding='utf-8') as ff:
             for i in range(len(p1c)):
-                ff.write('%s,%s,%s,%s\n' % (p1r[i], p1c[i], dy[i], dx[i]))
+                ff.write('%s,%s,%s,%s\n' % (p1c[i], p1r[i], dx[i], dy[i]))
 
     def unit_vector(self, vector):
         ''' Returns the unit vector of the vector

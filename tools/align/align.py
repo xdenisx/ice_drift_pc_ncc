@@ -16,6 +16,7 @@ try:
 except:
 	import gdal
 import numpy as np
+import os
 import csv
 import sys
 import xml.etree.ElementTree
@@ -137,12 +138,12 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	image2 = gdal.Open(str(path2))
 
 	# Get deformation data as original pixel locations in image1 and new pixel locations in image1
-	try:
-		with open( deformation_path ) as csvfile:
-			csvreader = csv.reader(csvfile)
-			deformations = np.array( [ row for row in csvreader ] ).astype(float)
-	except:
-		return 1
+	#try:
+	with open( deformation_path ) as csvfile:
+		csvreader = csv.reader(csvfile)
+		deformations = np.array( [ row for row in csvreader ] ).astype(float)
+	#except:
+#		return 1
 	deformations = deformations[ ~np.any( np.isnan(deformations), axis=1 ), : ]
 	orig_locs = deformations[:,[1,0]]
 	new_locs = deformations[:,[3,2]] + orig_locs
@@ -227,13 +228,12 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 
 
 
-def handlePair( image_path, deformation_path, output_path, transform_type, poly_order ):
+def handlePair( image_path, deformation_path, output_path, transform_type, poly_order, back_alignment=False ):
 	"""
 	Param 1: Path to directory to image pair.
 	Param 2: Path to main directory of drift results for specific pair.
 	Param 3: Path to place output files.
 	"""
-
 	# Get path to image pair
 	image_path = sorted( list(image_path.glob('UPS_*.tiff' )), key = lambda x: x.name.split('_')[6] )
 	if len(image_path) != 2:
@@ -249,14 +249,22 @@ def handlePair( image_path, deformation_path, output_path, transform_type, poly_
 		print( "Did not find .csv file for %s" % str(deformation_path)  )
 		return
 	deformation_path = deformation_path[0]
-	# Create directory
-	try:
-		output_path.mkdir()
-	except:
-		return
+
+	os.makedirs(output_path, exist_ok=True)
 
 	# Align images and save
 	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order )
+
+	# Perform back alignment (warping aligned image 1 to the original image 1)
+	if back_alignment == True:
+		path2 = path1
+		aligned_images = glob.glob(f'{output_path}/Aligned*.tif*')
+		aligned_images.sort(key=lambda x: os.path.basename(x).split('_')[7], reverse=True)
+		path1 = aligned_images[0]
+		output_path = f'{output_path}/back_alignment'
+		os.makedirs(output_path, exist_ok=True)
+		performAlignment(path1, path2, deformation_path, output_path, transform_type=transform_type, padding="constant",
+						 polynomial_order=poly_order)
 
 
 
@@ -311,7 +319,7 @@ if __name__ == "__main__":
 				print( "Running pair #" + str(iter_output_path.name) )
 
 				# Call for alignment
-				handlePair( iter_path, iter_deform_path, iter_output_path, transform_type, poly_order )
+				handlePair( iter_path, iter_deform_path, iter_output_path, transform_type, poly_order, back_alignment=True )
 				print("")
 
 
