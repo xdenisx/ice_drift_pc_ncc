@@ -481,7 +481,7 @@ class driftField:
         else:
             print('No georeferencing data found (lons, lats). Could not process the data.')
 
-    def export_txt(self, out_path='.', filtered=True):
+    def export_txt(self, out_path='.', filtered=True, mask=True):
         '''
         Export drift coordinates in image coordinate system (pixels) to text file
         '''
