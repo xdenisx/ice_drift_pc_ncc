@@ -19,6 +19,7 @@ import numpy as np
 import os
 import csv
 import sys
+import glob
 import xml.etree.ElementTree
 sys.path.append("../geolocation_grid")
 from LocationMapping import LocationMapping
@@ -126,7 +127,7 @@ def warping(path, output_path, image, trans, padding):
 
 	return 0
 
-def performAlignment( path1, path2, deformation_path, output_path, transform_type = "piecewise-affine", padding = "constant", polynomial_order = 2 ):
+def performAlignment( path1, path2, deformation_path, output_path, transform_type = "piecewise-affine", padding = "constant", polynomial_order = 2, back_alignment = True ):
 	"""
 	Function for aligning two images given a deformation field and then save it to output path.
 	"""
@@ -209,6 +210,19 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 		if warping(path1, output_path, image1, p.inverse, padding):
 			return 1
 
+		if back_alignment == True:
+			print('\nStart back-alignment...')
+			aligned_images = glob.glob(f'{output_path}/Aligned*.tif*')
+			aligned_images.sort(key=lambda x: os.path.basename(x).split('_')[7])
+			print(f'Aligned image: {aligned_images[0]}')
+			image_aligned_back = gdal.Open(aligned_images[0])
+			output_ba_path = output_path / 'back_alignment'
+			os.makedirs(output_ba_path, exist_ok=True)
+			warping(path1, output_ba_path, image_aligned_back, p, padding)
+			print('Done.')
+		else:
+			print('No back alignment')
+
 	except Exception as e:
 		print(str(e))
 		return 1
@@ -228,7 +242,7 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 
 
 
-def handlePair( image_path, deformation_path, output_path, transform_type, poly_order, back_alignment=False ):
+def handlePair( image_path, deformation_path, output_path, transform_type, poly_order, back_alignment=True ):
 	"""
 	Param 1: Path to directory to image pair.
 	Param 2: Path to main directory of drift results for specific pair.
@@ -253,19 +267,7 @@ def handlePair( image_path, deformation_path, output_path, transform_type, poly_
 	os.makedirs(output_path, exist_ok=True)
 
 	# Align images and save
-	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order )
-
-	# Perform back alignment (warping aligned image 1 to the original image 1)
-	if back_alignment == True:
-		path2 = path1
-		aligned_images = glob.glob(f'{output_path}/Aligned*.tif*')
-		aligned_images.sort(key=lambda x: os.path.basename(x).split('_')[7], reverse=True)
-		path1 = aligned_images[0]
-		output_path = f'{output_path}/back_alignment'
-		os.makedirs(output_path, exist_ok=True)
-		performAlignment(path1, path2, deformation_path, output_path, transform_type=transform_type, padding="constant",
-						 polynomial_order=poly_order)
-
+	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order, back_alignment = True )
 
 
 # If run as script
