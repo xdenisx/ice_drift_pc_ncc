@@ -36,7 +36,7 @@ def ReprojectCoords(coords,src_srs,tgt_srs):
     trans_coords=[]
     transform = osr.CoordinateTransformation(src_srs, tgt_srs)
     for x,y in coords:
-        x,y,z = transform.TransformPoint(y, x)
+        x,y,z = transform.TransformPoint(x, y)
         trans_coords.append([x,y])
 
     return trans_coords
@@ -133,7 +133,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             os.system(download_str)
 
             try:
-                os.remove(temp_json_fname)
+                pass#os.remove(temp_json_fname)
             except:
                 pass
 
