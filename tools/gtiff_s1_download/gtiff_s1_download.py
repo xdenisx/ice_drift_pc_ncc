@@ -133,7 +133,7 @@ for root, dirs, files in os.walk(input_gtiff_files): #, topdown=False
             os.system(download_str)
 
             try:
-                pass#os.remove(temp_json_fname)
+                os.remove(temp_json_fname)
             except:
                 pass
 
