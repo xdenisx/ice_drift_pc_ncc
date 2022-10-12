@@ -342,8 +342,7 @@ if __name__ == "__main__":
     polarizations = ['HH', 'VV', 'HV', 'VH']
     polarizations = [ x.lower() for x in polarizations ]
     files_pref = 'UPS'
-    
-    
+
     # go through the first in path tree and sort out the names
     f_names = []
     for root, d_names, ff_names in os.walk(in_path):

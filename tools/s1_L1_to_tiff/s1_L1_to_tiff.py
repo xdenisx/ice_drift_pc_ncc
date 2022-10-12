@@ -25,7 +25,7 @@ if len(sys.argv) >= 6:
 reproject = True
 save_metadata = True
 
-polarizations = ['HH', 'VV', 'HV']
+polarizations = ['HH', 'VV', 'HV', 'VH']
 polarizations = [x.lower() for x in polarizations]
 modes = ['EW', 'IW']
 
