@@ -143,7 +143,12 @@ str_download = "wget --no-check-certificate -O %s %s/param?" % (fname_meta, asf_
 str_download += "intersectsWith=%s" % coord_str
 str_download += "\&platform=%s" % args.platform
 str_download += "\&polarization=%s" % polarization
-str_download += "\&absoluteOrbit=%s" % args.orbit_num
+
+if args.orbit_num:
+    str_download += "\&relativeOrbit=%s" % args.orbit_num
+else:
+    pass
+
 str_download += "\&start=%s-%02d-%02dT%02d:%02d:00UTC\&end=%s-%02d-%02dT23:59:59UTC" % ( dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute, dt2.year, dt2.month, dt2.day )
 str_download += "\&beamMode=%s\&processingLevel=%s\&output=metalink" % (args.mode, args.grd_level)
 #print(str_download)
