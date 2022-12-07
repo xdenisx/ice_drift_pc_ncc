@@ -11,6 +11,6 @@ dt_str = '/mnt/s1/arctic/zip/%s' % dt_str
 
 os.makedirs(dt_str, exist_ok=True)
 #-c -179,60:179:89
-sh_str = '/home/denis/git/ice_drift_pc_ncc/tools/s1_esa_download/dhusget.sh -u xdenis88x -p pdp20den20 -s %sT00:00:00.000Z -m Sentinel-1 -T GRD -F \'( polarisationmode:HH,HH HV ) AND (footprint:\"Intersects(POLYGON((0.0 89.0, 179.0 89.0, 179.0 60.0, 0.0 60.0, 0.0 89.0)))\" )\' -o product -O %s' % \
+sh_str = '/home/denis/git/ice_drift_pc_ncc/tools/s1_esa_download/dhusget.sh -u XXXXX -p XXXXX -s %sT00:00:00.000Z -m Sentinel-1 -T GRD -F \'( polarisationmode:HH,HH HV ) AND (footprint:\"Intersects(POLYGON((0.0 89.0, 179.0 89.0, 179.0 60.0, 0.0 60.0, 0.0 89.0)))\" )\' -o product -O %s' % \
          (dt_str_yest, dt_str)
 os.system(sh_str)
