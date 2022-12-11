@@ -150,29 +150,13 @@ def performAlignment( path1, path2, deformation_path, output_path, transform_typ
 	new_locs = deformations[:,[3,2]] + orig_locs
 
 	# Acquire transformation given by deformation
-	try:
-		print("Computing transformation.")
-		trans = None
-		invTrans = None
-
+	if transform_type == "piecewise-affine":
+		print(f'\nComputing {transform_type} transformation...')
 		p = PiecewiseAffineTransform()
-
-		if transform_type == "polynomial":
-			p.estimate(src=orig_locs, dst=new_locs, order=polynomial_order)
-		else:
-			p.estimate(src=orig_locs, dst=new_locs)
-
-		'''
-		# for old version of skimage 
-		if transform_type == "polynomial":
-			trans = transform.estimate_transform( transform_type, src = orig_locs, dst = new_locs, order = polynomial_order )
-			invTrans = transform.estimate_transform( transform_type, dst = orig_locs, src = new_locs, order = polynomial_order )
-		else:
-			trans = transform.estimate_transform( transform_type, src = orig_locs, dst = new_locs )
-			invTrans = trans.inverse
-		'''
-	except:
-		return 1
+		p.estimate(src=orig_locs, dst=new_locs)
+		print(f'Done.\n')
+	else:
+		raise Exception(f'Sorry, {transform_type} transform is not implemented in the current version')
 
 	# # Acquire convex hulls
 	# print("Acquiring convex hulls.")
