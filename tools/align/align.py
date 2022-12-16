@@ -290,12 +290,15 @@ if __name__ == "__main__":
 
 			# Find directory with the same name in deformation path
 			iter_deform_path = deformation_path.joinpath(dir_name)
+			#print(iter_deform_path)
+
 			if (iter_deform_path.exists()):
 				iter_output_path = output_path.joinpath( dir_name )
 				# If subdirectory already exists
 				if (iter_output_path.exists()):
+					pass
 					# skip
-					continue
+					#continue
 					# # Remove old version
 					# for iterremove in iter_output_path.glob('*'):
 					# 	if iterremove.is_file():
