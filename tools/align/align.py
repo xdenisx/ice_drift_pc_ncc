@@ -272,7 +272,6 @@ if __name__ == "__main__":
 	poly_order = "3"
 	if len(sys.argv) >= 6:
 		poly_order = sys.argv[5]
-	poly_order = int(poly_order)
 
 	print("Aligning using method: %s" % transform_type )
 
