@@ -77,7 +77,7 @@ def plotInterpolatedVariable( image_path, band_name, variable_name ):
         x,y = location_mapping.latLon2Raster( np.array(lat), np.array(long) )
         
         # Create interpolator
-        f = interpolate.NearestNDInterpolator( list(zip(x[ok_grid_points], y[ok_grid_points])), val[ok_grid_points] )
+        f = interpolate.LinearNDInterpolator( list(zip(x[ok_grid_points], y[ok_grid_points])), val[ok_grid_points] )
         # f = interpolate.interp2d( x[ok_grid_points], y[ok_grid_points], val[ok_grid_points], kind='linear', fill_value = np.nan )
         # Interpoalte to grid
         X = np.arange( image.RasterXSize )
