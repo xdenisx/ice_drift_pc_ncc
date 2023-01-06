@@ -34,18 +34,17 @@ class LocationMapping:
         self.t = osr.CoordinateTransformation(crs, crsGeo)
         self.t_inv = osr.CoordinateTransformation(crsGeo, crs)
 
-
+    # OK
     def mapFromCoords2Proj( self, lat, long ):
         '''
             Map from standard projection (4326) to image projection
         '''
 
-        points = np.stack( (long, lat), axis = 1 )
+        points = np.stack( (lat, long), axis = 1 )
         pos = self.t_inv.TransformPoints( points )
         y, x = ( np.array( [elem[0] for elem in pos] ), np.array( [elem[1] for elem in pos] ) )
 
         return x, y
-
 
     def mapFromProj2Coords( self, x, y ):
         '''
@@ -70,13 +69,13 @@ class LocationMapping:
 
         return (points[0, :], points[1, :])
 
-
+    # TODO: check
     def mapFromProj2Raster( self, x, y ):
         '''
             Map from projection points to raster
         '''
 
-        points = np.stack( (x,y), axis = 1 ).T
+        points = np.stack( (y,x), axis = 1 ).T
         points = points - self.trans_offset.reshape( (2,1) )
         points = np.linalg.solve( self.trans_matrix, points )
 
@@ -103,3 +102,13 @@ class LocationMapping:
         lon, lat = self.mapFromProj2Coords( x, y )
 
         return (lat, lon)
+
+    # OK
+    def raster2Proj( self, x, y ):
+        '''
+            Map from raster points to projection coordinates
+        '''
+
+        x, y = self.mapFromRaster2Proj( x, y )
+
+        return (x, y)
