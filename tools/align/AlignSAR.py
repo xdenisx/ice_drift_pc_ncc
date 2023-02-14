@@ -68,13 +68,14 @@ class Alignment:
 
 			# If coordinates are geocoded then covert them to image coordinates
 			if self.geocoded == True:
-				lm = LocationMapping(image1.GetGeoTransform(), image1.GetProjection())
+				lm1 = LocationMapping(image1.GetGeoTransform(), image1.GetProjection())
+				lm2 = LocationMapping(image2.GetGeoTransform(), image2.GetProjection())
 				print('\nConvert geocoded cooridnates to raster coordinates...')
 				displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
 				orig_locs = displacements[:, [0, 1]]
 				new_locs = displacements[:, [2, 3]]
-				c0, r0 = lm.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
-				c1, r1 = lm.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
+				c0, r0 = lm1.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
+				c1, r1 = lm2.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
 				orig_locs = np.stack((c0, r0)).T
 				new_locs = np.stack((c1, r1)).T
 				print('Done.\n')
