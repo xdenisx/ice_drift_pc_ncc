@@ -30,7 +30,7 @@ class Alignment:
 
 	def __init__(self, img1_path=None, img2_path=None, displacement_path=None,
 				 transform_type="piecewise-affine", out_path=r'./',
-				 transform_master=False):
+				 transform_master=False, geocoded=False, proj=None):
 
 		self.transform_type = transform_type
 		self.img1_path = img1_path
@@ -38,6 +38,8 @@ class Alignment:
 		self.displacement_path = displacement_path
 		self.out_path = out_path
 		self.transform_master = transform_master
+		self.geocoded = geocoded
+		self.proj = proj
 
 		print(f'Alignment method: {transform_type}')
 		os.makedirs(self.out_path, exist_ok=True)
@@ -64,10 +66,28 @@ class Alignment:
 			csvreader = csv.reader(csvfile)
 			displacements = np.array([row for row in csvreader]).astype(float)
 
-		# Select only not NaN data for displacements
-		displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
-		orig_locs = displacements[:, [1, 0]]
-		new_locs = displacements[:, [3, 2]] + orig_locs
+			# If coordinates are geocoded then covert them to image coordinates
+			if self.geocoded == True:
+				lm = LocationMapping(image1.GetGeoTransform(), image1.GetProjection())
+				print('\nConvert geocoded cooridnates to raster coordinates...')
+				displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
+				orig_locs = displacements[:, [0, 1]]
+				new_locs = displacements[:, [2, 3]]
+				c0, r0 = lm.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
+				c1, r1 = lm.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
+
+				orig_locs = np.stack((c0, r0)).T
+				new_locs = np.stack((c1, r1)).T
+
+				print(orig_locs)
+				print(new_locs)
+
+				print('Done.\n')
+			else:
+				# Select only not NaN data for displacements
+				displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
+				orig_locs = displacements[:, [1, 0]]
+				new_locs = displacements[:, [3, 2]] + orig_locs
 
 		# Acquire transformation given by deformation
 		if self.transform_type == "piecewise-affine":
