@@ -75,13 +75,8 @@ class Alignment:
 				new_locs = displacements[:, [2, 3]]
 				c0, r0 = lm.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
 				c1, r1 = lm.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
-
 				orig_locs = np.stack((c0, r0)).T
 				new_locs = np.stack((c1, r1)).T
-
-				print(orig_locs)
-				print(new_locs)
-
 				print('Done.\n')
 			else:
 				# Select only not NaN data for displacements
