@@ -1,8 +1,8 @@
 # SAR image alignment by ice drift compensation
 
-This repository contains a Python class for two SAR image alignment by ice drift compensation [Eriksson et al, 2022].
+This repository contains a Python class for two SAR images alignment by sea ice drift compensation [Eriksson et al, 2022](https://ieeexplore.ieee.org/abstract/document/9884292).
 The code operates with two sequential SAR images in geotiff format and a text file containing ice displacements.
-The displacements can be in either image coordinates (row/column numbers) or geographical coordinates (lat/lon).
+The displacements can be in either image coordinates - row/column numbers or in geographical coordinates - lat/lon (then parameter ``geocoded`` must be set to ``True``).
 
 <br><br>
 An example of the displacement file content (image coordinates):
@@ -27,11 +27,10 @@ a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060
               displacement_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/drift/060/output/fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
               out_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/test_results')
 ```
- 
 
 <br><br>
 An example of the displacement file content (geographical coordinates):
-<br><br>
+<br>
 ```
 # lon0, lat1, lon2, lat2
 ...
@@ -41,9 +40,8 @@ An example of the displacement file content (geographical coordinates):
 ...
 ```
   
-<br><br>
-
-Usage(``geocoded=True``):
+<br>
+Usage (``geocoded=True``):
 
 ```python
 from AlignSAR import *
@@ -52,7 +50,7 @@ from AlignSAR import *
 a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_1_of_subset_1_of_S1A_EW_GRDM_1SDH_20221119T072104_20221119T072208_045960_057FE5_E8B1_Orb_Cal_TC_HV.tif',
               img2_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_2_of_S1A_EW_GRDM_1SDH_20221120T080155_20221120T080259_045975.tif',
               displacement_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_19-20_nov_drift_HV.csv',
-              out_path='/data/rrs/seaice/esa_rosel/Anna_data/test_geo_align/test_res',
+              out_path='/data/rrs/seaice/esa_rosel/test_geo_align/test_res',
               geocoded=True)
 ```
 
