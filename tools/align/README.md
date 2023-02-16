@@ -5,20 +5,32 @@ The code operates with two sequential SAR images in geotiff format and a text fi
 The displacements can be in either image coordinates (row/column numbers) or geographical coordinates (lat/lon).
 
 <br><br>
-An example of the file content (image coordinates):
+An example of the displacement file content (image coordinates):
 <br><br>
 ```
-# x0, y0, dx, dy2
+# x0, y0, dx, dy
 ...
 1485,3195,-4.0,-71.0
 1485,3245,-3.0,-72.0
 1485,3295,-2.0,-73.0
 ...
 ```
+
+Usage:
+
+```python
+from AlignSAR import *
+
+%%time
+a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_ALOS2_XX_XXXX_XXXX_20191028T174022_20191028T174114_0000326209_001001_ALOS2293291900-191028.tiff',
+              img2_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_S1B_EW_GRDM_1SDH_20191031T170040_20191031T170144_018722_02349F_0FA6.tiff',
+              displacement_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/drift/060/output/fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
+              out_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/test_results')
+```
  
 
 <br><br>
-An example of the file content (geographical coordinates):
+An example of the displacement file content (geographical coordinates):
 <br><br>
 ```
 # lon0, lat1, lon2, lat2
@@ -31,21 +43,7 @@ An example of the file content (geographical coordinates):
   
 <br><br>
 
-Usage with the displacement file containing image coordinates:
-
-```python
-from AlignSAR import *
-
-%%time
-a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_ALOS2_XX_XXXX_XXXX_20191028T174022_20191028T174114_0000326209_001001_ALOS2293291900-191028.tiff',
-              img2_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_S1B_EW_GRDM_1SDH_20191031T170040_20191031T170144_018722_02349F_0FA6.tiff',
-              displacement_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/drift/060/output/fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
-              out_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/test_results')
-```
-
-<br><br>
-
-To use with the displacement file containing geographical coordinates you need to set ``geocoded=True``:
+Usage(``geocoded=True``):
 
 ```python
 from AlignSAR import *
