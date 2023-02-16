@@ -22,10 +22,10 @@ Usage:
 from AlignSAR import *
 
 %%time
-a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_ALOS2_XX_XXXX_XXXX_20191028T174022_20191028T174114_0000326209_001001_ALOS2293291900-191028.tiff',
-              img2_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_S1B_EW_GRDM_1SDH_20191031T170040_20191031T170144_018722_02349F_0FA6.tiff',
-              displacement_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/drift/060/output/fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
-              out_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/test_results')
+a = Alignment(img1_path='UPS_XX_ALOS2_XX_XXXX_XXXX_20191028T174022_20191028T174114_0000326209_001001_ALOS2293291900-191028.tiff',
+              img2_path='UPS_XX_S1B_EW_GRDM_1SDH_20191031T170040_20191031T170144_018722_02349F_0FA6.tiff',
+              displacement_path='fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
+              out_path='test_results')
 ```
 
 <br><br>
@@ -47,14 +47,14 @@ Usage (``geocoded=True``):
 from AlignSAR import *
 
 %%time
-a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_1_of_subset_1_of_S1A_EW_GRDM_1SDH_20221119T072104_20221119T072208_045960_057FE5_E8B1_Orb_Cal_TC_HV.tif',
-              img2_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_2_of_S1A_EW_GRDM_1SDH_20221120T080155_20221120T080259_045975.tif',
-              displacement_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_19-20_nov_drift_HV.csv',
-              out_path='/data/rrs/seaice/esa_rosel/test_geo_align/test_res',
+a = Alignment(img1_path='subset_1_of_subset_1_of_S1A_EW_GRDM_1SDH_20221119T072104_20221119T072208_045960_057FE5_E8B1_Orb_Cal_TC_HV.tif',
+              img2_path='subset_2_of_S1A_EW_GRDM_1SDH_20221120T080155_20221120T080259_045975.tif',
+              displacement_path='subset_19-20_nov_drift_HV.csv',
+              out_path='test_res',
               geocoded=True)
 ```
 
-The code written by Anders Hildeman and Denis Demchev.
+The code written by Anders Hildeman and Denis Demchev
 
 
 
