@@ -1,14 +1,64 @@
+# SAR image alignment by ice drift compensation
 
-"""
-align.py : Script for aligning two images given a drift vector field.
+This repository contains a Python class for two SAR image alignment by ice drift compensation [Eriksson et al, 2022].
+The code operates with two sequential SAR images in geotiff format and a text file containing ice displacements.
+The displacements can be in either image coordinates (row/column numbers) or geographical coordinates (lat/lon).
 
-Param 1: Path to parent directory of all collocated image pairs
-Param 2: Path to parent directory of all retrieved drifts
-Param 3: Path to parent directory intended for all outputs
-Param 4: Which transform type to use.
-Param 5: Order of polynomial if polynomial transformation is used.
-"""
+<br><br>
+An example of the file content (image coordinates):
+<br><br>
+```
+# x0, y0, dx, dy2
+...
+1485,3195,-4.0,-71.0
+1485,3245,-3.0,-72.0
+1485,3295,-2.0,-73.0
+...
+```
+ 
 
+<br><br>
+An example of the file content (geographical coordinates):
+<br><br>
+```
+# lon0, lat1, lon2, lat2
+...
+-3.8136,81.33517,-3.6024,81.3035
+-3.6636,81.33665,-3.4552,81.3043
+-3.5135,81.33807,-3.3038,81.3046
+...
+```
+  
+<br><br>
+
+Usage with the displacement file containing image coordinates:
+
+```python
+from AlignSAR import *
+
+%%time
+a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_ALOS2_XX_XXXX_XXXX_20191028T174022_20191028T174114_0000326209_001001_ALOS2293291900-191028.tiff',
+              img2_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/images/060/UPS_XX_S1B_EW_GRDM_1SDH_20191031T170040_20191031T170144_018722_02349F_0FA6.tiff',
+              displacement_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/drift/060/output/fltrd_CTU_drift_20191028T174022-20191031T170040.csv',
+              out_path='/data/rrs/seaice/esa_rosel/notebook_tutorial/test_results')
+```
+
+<br><br>
+
+To use with the displacement file containing geographical coordinates you need to set ``geocoded=True``:
+
+```python
+from AlignSAR import *
+
+%%time
+a = Alignment(img1_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_1_of_subset_1_of_S1A_EW_GRDM_1SDH_20221119T072104_20221119T072208_045960_057FE5_E8B1_Orb_Cal_TC_HV.tif',
+              img2_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_2_of_S1A_EW_GRDM_1SDH_20221120T080155_20221120T080259_045975.tif',
+              displacement_path='/data/rrs/seaice/esa_rosel/test_geo_align/subset_19-20_nov_drift_HV.csv',
+              out_path='/data/rrs/seaice/esa_rosel/Anna_data/test_geo_align/test_res',
+              geocoded=True)
+```
+
+The code written by Anders Hildeman and Denis Demchev.
 
 
 
