@@ -71,9 +71,12 @@ class Alignment:
 				lm1 = LocationMapping(image1.GetGeoTransform(), image1.GetProjection())
 				lm2 = LocationMapping(image2.GetGeoTransform(), image2.GetProjection())
 				print('\nConvert geocoded cooridnates to raster coordinates...')
+				# Select only not NaN data for displacements
 				displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
+				displacements = displacements[~np.any(np.isinf(displacements), axis=1), :]
 				orig_locs = displacements[:, [0, 1]]
 				new_locs = displacements[:, [2, 3]]
+				print(new_locs)
 				c0, r0 = lm1.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
 				c1, r1 = lm2.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
 				orig_locs = np.stack((c0, r0)).T
@@ -82,6 +85,7 @@ class Alignment:
 			else:
 				# Select only not NaN data for displacements
 				displacements = displacements[~np.any(np.isnan(displacements), axis=1), :]
+				displacements = displacements[~np.any(np.isinf(displacements), axis=1), :]
 				orig_locs = displacements[:, [1, 0]]
 				new_locs = displacements[:, [3, 2]] + orig_locs
 
