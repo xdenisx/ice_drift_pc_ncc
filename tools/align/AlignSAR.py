@@ -76,7 +76,6 @@ class Alignment:
 				displacements = displacements[~np.any(np.isinf(displacements), axis=1), :]
 				orig_locs = displacements[:, [0, 1]]
 				new_locs = displacements[:, [2, 3]]
-				print(new_locs)
 				c0, r0 = lm1.latLon2Raster( orig_locs[:,1].reshape( (-1) ), orig_locs[:,0].reshape( (-1) ) )
 				c1, r1 = lm2.latLon2Raster( new_locs[:,1].reshape( (-1) ), new_locs[:,0].reshape( (-1) ) )
 				orig_locs = np.stack((c0, r0)).T
