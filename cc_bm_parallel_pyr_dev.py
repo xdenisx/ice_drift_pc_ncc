@@ -725,6 +725,14 @@ def export_to_text(x1, y1, u, v, cc, output_path):
             f.write('%.1f %.1f %.1f %.1f %.1f \n' % (x1[i], y1[i], u[i], v[i], cc[i]))
     print('Text file creation success!\n')
 
+def create_S1_txt():
+    filename1 = Conf.f1_name
+    filename2 = Conf.f2_name
+    outpath = Conf.res_dir + '/'
+    with open(outpath+'S1_names.txt', 'w') as f:
+        f.write(os.path.basename(filename1)+'\n'+os.path.basename(filename2))
+    f.close()
+
 def calc_distance(lon1, lat1, lon2, lat2):
     import pyproj
     geod = pyproj.Geod(ellps="WGS84")
@@ -1392,7 +1400,7 @@ if __name__ == '__main__':
     ### Calculate Drift ###
     #####################
     print('\nStart multiprocessing...')
-    nb_cpus = 10
+    nb_cpus = 31
 
     height, width = Conf.img1.shape
     print('Image size Height: %s px Width: %s px' % (height, width))
@@ -1465,6 +1473,9 @@ if __name__ == '__main__':
     mag_speed, divergence, curl, shear, total_deform = Defo.calculate_defo()
 
     print('\n### Success!\n')
+    create_S1_txt()
+
+
 
     #########################
     # EXPORT TO GEO-FORMATS

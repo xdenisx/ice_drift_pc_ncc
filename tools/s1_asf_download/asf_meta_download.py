@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument('polarization', help='Polarization (HH/VV/HH+HV/VV+VH)', choices=['HH', 'VV', 'HH+HV', 'VV+VH'])
 
     # Optional arguments
-    parser.add_argument('orbit_num', help='Orbital number', type=int, nargs='?')
+    parser.add_argument('orbit_num', help='Orbital number', type=str, nargs='?')
     parser.add_argument('flight_direction', help='Flight direction (ascending/descending)',
                         choices=['Ascending', 'Descending'], nargs='?')
 
@@ -56,9 +56,6 @@ try:
 except Exception as e:
     print(e)
     print('\nError: date and/or time format is wrong !\nMust be: YYYYMMDD and HHMMSS \nStop executing\n')
-
-
-
 
 # Modify polarization format
 polarization = args.polarization
@@ -114,6 +111,13 @@ if geo_file_geom == 'Polygon':
         coord_str += '%.2f%s%.2f' % (coord[0], '%20', coord[1])
     coord_str = 'polygon%28%28' + coord_str + '%29%29'
 
+if geo_file_geom == 'MultiPolygon':
+    for coord in data['features'][0]['geometry']['coordinates'][0][0]:
+        if len(coord_str) > 0:
+            coord_str += ','
+        coord_str += '%.2f%s%.2f' % (coord[0], '%20', coord[1])
+    coord_str = 'polygon%28%28' + coord_str + '%29%29'
+
 if geo_file_geom == 'Point':
     coord_str = 'point%28' + '%.1f' % data['features'][0]['geometry']['coordinates'][0] + '+' \
                 + '%.1f' % data['features'][0]['geometry']['coordinates'][1] + '%29'
@@ -139,9 +143,15 @@ str_download = "wget --no-check-certificate -O %s %s/param?" % (fname_meta, asf_
 str_download += "intersectsWith=%s" % coord_str
 str_download += "\&platform=%s" % args.platform
 str_download += "\&polarization=%s" % polarization
+
+if args.orbit_num:
+    str_download += "\&relativeOrbit=%s" % args.orbit_num
+else:
+    pass
+
 str_download += "\&start=%s-%02d-%02dT%02d:%02d:00UTC\&end=%s-%02d-%02dT23:59:59UTC" % ( dt1.year, dt1.month, dt1.day, dt1.hour, dt1.minute, dt2.year, dt2.month, dt2.day )
 str_download += "\&beamMode=%s\&processingLevel=%s\&output=metalink" % (args.mode, args.grd_level)
-#print(str_download)
+print(str_download)
 print('\nStart downloading...')
 os.system(str_download)
 print('Success\n\n'

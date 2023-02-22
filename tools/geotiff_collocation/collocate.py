@@ -85,7 +85,6 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
         extension = np.abs(float(maximum_drift_speed)) * np.abs(float( (dt1 - dt2).total_seconds() ))
     
     try:
-
         adjuster1 = RasterAdjuster(f1, f1)
         adjuster2 = RasterAdjuster(f2, f2)
         bandNames = []
@@ -94,13 +93,10 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
         metadata1 = []
         metadata2 = []
         
-        
-
         # Loop through all polarizations
         try:
-
             for polarization in polarizations:
-                # print("Going through polarization: %s" % polarization)
+                print("Going through polarization: %s" % polarization)
                 # See if current polarization exists
                 f1_polarization = re.sub(r"UPS_\w{2}_", "UPS_" + polarization + "_", f1  )
                 f2_polarization = re.sub(r"UPS_\w{2}_", "UPS_" + polarization + "_", f2  )
@@ -130,19 +126,15 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
 
                 # Acquire cropped band from current polarization to list of bands for file 2
                 bands1.append( adjuster1.raster2.GetRasterBand(1).ReadAsArray() )
-                bands2.append( adjuster2.raster2.GetRasterBand(1).ReadAsArray() )
-                
-                
-                
-                
+                bands2.append( adjuster2.raster2.GetRasterBand(1).ReadAsArray() )    
         except Exception as e:
             print("Failed to crop all bands to same raster!")
             raise e
             return 0
+
         if len( bands1 ) == 0:
             return 0
         print("Bands: %s" % str(bandNames))
-        
         
         polar_name = bandNames[0]
         # If more than one polarization 
@@ -160,7 +152,7 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
             return 0
 
         try:
-            # Populate all bands
+            print('Populate all bands')
             tempRaster = gdal.GetDriverByName('GTiff').Create( "%s/temp1.tiff" % out_path , adjuster1.raster1.RasterXSize, adjuster1.raster1.RasterYSize, len(bands1), gdal.GDT_Float32 )
             tempRaster.SetGCPs( adjuster1.raster1.GetGCPs(), adjuster1.raster1.GetGCPProjection() )
             tempRaster.SetGeoTransform( adjuster1.raster1.GetGeoTransform() )
@@ -185,8 +177,7 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
             raise e
             return 0
 
-
-        print('\nStart adjusment...')
+        print(f'\nStart adjusment... {f1} {f2}')
 
         adjuster1.initFromRasters( adjuster1.raster1, adjuster2.raster1, intersection_extension = extension)
         # Get arrays of rasters
@@ -238,20 +229,13 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
         raster2.SetMetadata( metadata )
         raster2.FlushCache()
         
-        
-        
         print('Adjusment done.\n')
 
         return 1
-
     except Exception as e:
+        print('Smth failed')
         print(e)
         return 0
-
-
-
-
-
 
 
 def acquireID( parent_folder ):
@@ -322,11 +306,12 @@ if __name__ == "__main__":
     out_path = sys.argv[2]
     days_lag = float(sys.argv[3])
     in_path2 = None
+    days_minimum_lag = float(1)
     if len( sys.argv ) >= 5:
-    	in_path2 = sys.argv[4]
-    days_minimum_lag = float(0)
+        days_minimum_lag = float(sys.argv[4])
     if len( sys.argv ) >= 6:
-    	days_minimum_lag = float(sys.argv[5])
+        in_path2 = sys.argv[5]
+    	
     intersect_ratio = float(0.34)
     if len( sys.argv ) >= 7:
     	intersect_ratio = float(sys.argv[6])
@@ -409,7 +394,8 @@ if __name__ == "__main__":
                                 # Get ID 
                                 id_pair = acquireID(out_path) 
                                 # print('\nFile 1: %s \nFile 2: %s' % (ifile, ifile2) )
-                                # Save pair 
+                                # Save pair
+                                print(f'check_save_pair called with {ifile} {ifile2}') 
                                 res = check_save_pair(ifile, ifile2, out_path, id_pair, polarizations, intersect_ratio, maximum_drift_speed = max_drift_speed)
     
                                 if res == 1:

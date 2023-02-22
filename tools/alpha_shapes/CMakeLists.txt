@@ -12,8 +12,8 @@ set(CMAKE_CXX_STANDARD 14)
 #  message( FATAL_ERROR "Can not find cgal core" )
 #endif()
 
-find_package(Boost 1.58 REQUIRED COMPONENTS
+find_package(Boost 1.71 REQUIRED COMPONENTS
              program_options)
 
 add_executable(${PROJECT_NAME} "main.cpp")
-target_link_libraries(${PROJECT_NAME} CGAL gmp Boost::program_options)
+target_link_libraries(${PROJECT_NAME} gmp Boost::program_options)
