@@ -535,10 +535,62 @@ class driftField:
 
     def outliers_filtering(self, radius=256, angle_difference=5, length_difference=30,
                            total_neighbours=7, angle_neighbours=7, length_neighbours=7,
-                           th_small_length=15.):
+                           th_small_length=15., artificial_vectors_filtering=True):
         '''
         Outliers filtering based on local homogenity criteria (vector direction and length)
         '''
+
+        # Filter out artificial vectors like vectors produced by CTU drift algorithm
+        # (border effect + orthogonal vectors)
+        if artificial_vectors_filtering==True:
+            # Filter start points with NaN values
+
+            img1 = self.tiff_data['data']
+            img2 = self.tiff_data2['data']
+
+            # Filter end points with NaN values
+            # Image1
+            self.data['dy_2d'][np.isnan(img1[np.rint(self.data['x1_2d']).astype('int'),
+                                             np.rint(self.data['y1_2d']).astype('int')])] = np.nan
+
+            self.data['dx_2d'][np.isnan(img1[np.rint(self.data['x1_2d']).astype('int'),
+                                             np.rint(self.data['y1_2d']).astype('int')])] = np.nan
+
+            # Image2
+            data_test['dy_2d'][np.isnan(img2[np.rint(self.data['x1_2d']).astype('int'),
+                                             np.rint(self.data['y1_2d']).astype('int')])] = np.nan
+
+            data_test['dx_2d'][np.isnan(img2[np.rint(self.data['x1_2d']).astype('int'),
+                                             np.rint(self.data['y1_2d']).astype('int')])] = np.nan
+
+            # Filter start points with NaN values
+            # Image1
+            self.data['dy_2d'][np.isnan(img1[np.rint(self.data['x0_2d']).astype('int'),
+                                             np.rint(self.data['y0_2d']).astype('int')])] = np.nan
+
+            self.data['dx_2d'][np.isnan(img1[np.rint(self.data['x0_2d']).astype('int'),
+                                             np.rint(self.data['y0_2d']).astype('int')])] = np.nan
+
+            # Image2
+            self.data['dy_2d'][np.isnan(img2[np.rint(self.data['x0_2d']).astype('int'),
+                                             np.rint(self.data['y0_2d']).astype('int')])] = np.nan
+
+            self.data['dx_2d'][np.isnan(img2[np.rint(self.data['x0_2d']).astype('int'),
+                                             np.rint(self.data['y0_2d']).astype('int')])] = np.nan
+
+            # Iterate over all vectors and exclude with vicinity with NaNs
+            w = 200
+
+            # Exclude end points with NaN within vicinity (Image1)
+            for i in range(self.data['x1_2d'].shape[0]):
+                for j in range(self.data['x1_2d'].shape[1]):
+                    if np.isnan(img1[np.max((0, int(self.data['x1_2d'][i, j] - w))):np.min((int(self.data['x1_2d'][i, j] + w), img1.shape[0])),
+                                np.max((0, int(self.data['y1_2d'][i, j] - w))):np.min((int(self.data['y1_2d'][i, j] + w), img1.shape[1]))]).any():
+                        self.data['dx_2d'][i, j] = np.nan
+                        self.data['dy_2d'][i, j] = np.nan
+        else:
+            pass
+
 
         y0, x0, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), self.data[
             'dx_2d'].ravel()
