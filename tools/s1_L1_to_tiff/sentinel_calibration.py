@@ -19,6 +19,7 @@ from skimage.exposure import rescale_intensity
 from skimage.morphology import disk
 from skimage.filters import median
 from skimage import exposure
+from scipy.ndimage import uniform_filter
 
 GDALWARP_PATH = 'gdalwarp '
 path_to_coastline = '/Home/denemc/git/ice_drift_pc_ncc/data/ne_50m_land.shp'
@@ -227,7 +228,7 @@ def get_land_mask(ds_tiff):
     else:
         print('\nCould not find land data in %s!\n' % path_to_coastline)
 
-def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
+def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False, supress_speckle=False):
     # 1) creating CoordinateTransformation:
     target = osr.SpatialReference()
     target.ImportFromEPSG(t_srs)
@@ -261,6 +262,16 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False):
         band = ds_wrap.GetRasterBand(1)
         arr = band.ReadAsArray()
         arr[np.isinf(arr)] = np.nan
+
+        # Speckle filtering
+        if supress_speckle == True:
+            print('Supressing speckle with median filter')
+            #arr = lee_filter(arr, window=16)
+            arr = median(arr, np.ones((9, 9)))
+            print('Done')
+        else:
+            pass
+
 
         [rows, cols] = arr.shape
 

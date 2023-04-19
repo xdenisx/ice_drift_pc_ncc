@@ -210,7 +210,7 @@ def gtiff_enhance(tif_path, out_path):
     p2, p98 = np.nanpercentile(A, (2, 98))
     A = exposure.rescale_intensity(A, in_range=(p2, p98), out_range=(0, 254))
 
-    A[np.isnan(A)] = 255
+    A[np.isnan(A)] = 0
 
     driver = gdal.GetDriverByName('GTiff')
     outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
@@ -233,7 +233,12 @@ mask = sys.argv[2]
 out_path = sys.argv[3]
 # Time gap
 days = int(sys.argv[4])
-dstSRS = '+proj=laea +lat_0=90 +lon_0=90 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+
+#dstSRS = '+proj=laea +lat_0=90 +lon_0=90 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+#dstSRS = '+proj=longlat +datum=WGS84 +no_defs'
+
+dstSRS = '+proj=stere +lat_0=90 +lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +datum=WGS84 +units=m +no_defs +type=crs'
+
 
 try:
     os.makedirs(out_path)
@@ -246,7 +251,8 @@ except:
 unq_dates = []
 for root, dirs, files in os.walk(in_path):
     for fname in files:
-        if fname.endswith('tiff'):
+        print(fname)
+        if fname.endswith('tiff') and fname.find(mask) >= 0:
             m = re.findall(r'\d\d\d\d\d\d\d\dT', fname)[0][:-1]
             dt_f = datetime.strptime(('%s/%s/%s' %
                                      (m[0:4], m[4:6], m[6:8])),
@@ -258,7 +264,7 @@ unq_dates.sort()
 print('Unique dates: %s' % set(unq_dates))
 
 if len(unq_dates) == 1:
-    unq_dates = unq_dates + unq_dates[0]
+    unq_dates = [unq_dates[0]]
 
 for idate in unq_dates[:]:
     dt_2 = idate
@@ -269,7 +275,7 @@ for idate in unq_dates[:]:
     files_to_mosaic = []
     for root, dirs, files in os.walk(in_path):
         for fname in files:
-            if fname.endswith('tiff'):
+            if fname.endswith('tiff') and fname.find(mask) >= 0:
                 m = re.findall(r'\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', fname)[0]
                 dt_f = datetime.strptime(('%s/%s/%sT%s:%s:%s' %
                                          (m[0:4], m[4:6], m[6:8], m[9:11], m[11:13], m[13:15])),

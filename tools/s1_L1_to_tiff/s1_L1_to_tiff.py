@@ -114,15 +114,16 @@ for root, d_names, f_names in os.walk(in_path):
                         if 'GRDM' in out_tiff_name:
                             res = resolution['GRDM']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=f_mask)
+                                         mask=f_mask, supress_speckle=True)
 
                         elif 'GRDH' in out_tiff_name:
                             res = resolution['GRDH']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=f_mask)
+                                         mask=f_mask, supress_speckle=True)
 
                         # Delete calibrated unprojected tiff
                         try:
+                            pass
                             os.remove(out_calib_name)
                         except:
                             pass
