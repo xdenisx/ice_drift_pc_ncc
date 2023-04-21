@@ -387,6 +387,11 @@ class driftField:
         Export vetors to geojson/shp format
         '''
 
+        ddy = self.data['dy_2d'].copy()
+        ddx = self.data['dx_2d'].copy()
+        ddy[self.data['outliers_mask'] == False] = np.nan
+        ddx[self.data['outliers_mask'] == False] = np.nan
+
         '''
         Test plotting 
         
@@ -442,11 +447,6 @@ class driftField:
                 print('done.\n')
             else:
                 pass
-
-            plt.clf()
-            plt.imshow(y1, cmap='jet')
-            plt.colorbar()
-            plt.savefig('/data/rrs/seaice/esa_rosel/L_C_pairs/exp_bac/output/999.png', dpi=300)
 
             for i in range(y1.shape[0]):
                 for j in range(y1.shape[1]):
