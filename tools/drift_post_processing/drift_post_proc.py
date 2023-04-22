@@ -803,7 +803,65 @@ class driftField:
         tt = list(set(idx_mask))
         iidx_mask = np.array(tt)
         mask = np.full(uu.shape, True)
-        mask[iidx_mask] = False
+        try:
+            mask[iidx_mask] = False
+        except:
+            pass
+        self.data['outliers_mask'] = mask.reshape(self.data['y0_2d'].shape[0], self.data['y0_2d'].shape[1])
+
+        uu[~mask] = np.nan
+        vv[~mask] = np.nan
+
+        # Experimental second iteration
+        print('Second iteration...')
+        for i in range(len(x0)):
+            if not i in idx_mask:
+                # Keep 'small' vectors (below threshold th_small_length)
+                if np.hypot(uu[i], vv[i]) > th_small_length and not np.isnan(uu[i]):
+                    req_data = np.array((self.data['y0_2d'].ravel()[i], self.data['x0_2d'].ravel()[i])).reshape(1, -1)
+                    # Getting number of neighbours
+                    num_nn = vector_start_tree.query_radius(req_data, r=radius, count_only=True)
+                    # print('Number of neighbors: %s' % num_nn)
+
+                    if num_nn[0] < total_neighbours:
+                        idx_mask.append(i)
+
+                    else:
+                        nn = vector_start_tree.query_radius(req_data, r=radius)
+                        data = np.vstack((uu[nn[0]], vv[nn[0]])).T
+
+                        num_of_homo_NN = 0
+                        num_of_length_homo_NN = 0
+
+                        for ii in range(num_nn[0]):
+                            # Angle between "this" vector and others
+                            angle_v1_v2 = self.angle_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+                            # Length between "this" vector and others
+                            diff_v1_v2 = self.length_between([uu[i], vv[i]], [data[:, 0][ii], data[:, 1][ii]])
+
+                            if angle_v1_v2 <= angle_difference:
+                                num_of_homo_NN = num_of_homo_NN + 1
+
+                            if diff_v1_v2 < length_difference:
+                                num_of_length_homo_NN = num_of_length_homo_NN + 1
+
+                            # Mask two orthogonal vectors
+                            if angle_v1_v2 >= 89 and angle_v1_v2 <= 91:
+                                idx_mask.append(i)
+                                idx_mask.append(ii)
+
+                        if not (num_of_homo_NN >= angle_neighbours) or not (num_of_length_homo_NN >= length_neighbours):
+                            idx_mask.append(i)
+                else:
+                    pass
+
+        tt = list(set(idx_mask))
+        iidx_mask = np.array(tt)
+        mask = np.full(uu.shape, True)
+        try:
+            mask[iidx_mask] = False
+        except:
+            pass
         self.data['outliers_mask'] = mask.reshape(self.data['y0_2d'].shape[0], self.data['y0_2d'].shape[1])
 
         """
