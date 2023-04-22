@@ -599,8 +599,89 @@ class driftField:
             img1 = self.tiff_data['data']
             img2 = self.tiff_data2['data']
 
-            # Filter end points with NaN values
+            ######################################
+            # Start testing
+            ######################################
 
+            # Init masked arrays for handling
+            mask = np.ma.make_mask(self.data['y1_2d'].copy())
+
+            # End points outside an image
+            mask[np.abs(self.data['x1_2d']) >= img1.shape[1]] = False
+            mask[np.abs(self.data['y1_2d']) >= img1.shape[0]] = False
+
+            # NaN values
+            mask[np.isnan(self.data['y1_2d'])] = False
+            mask[np.isnan(self.data['x1_2d'])] = False
+
+            # 9999 values
+            mask[np.isnan(self.data['y1_2d'])==9999] = False
+            mask[np.isnan(self.data['x1_2d'])==9999] = False
+
+            #y1_ma = np.ma.array(self.data['y1_2d'].copy(), mask=~mask).astype(int)
+            #x1_ma = np.ma.array(self.data['y1_2d'].copy(), mask=~mask).astype(int)
+
+            self.data['dy_2d'][~mask] = np.nan
+            self.data['dx_2d'][~mask] = np.nan
+
+            # Chack vicinity of end points
+            w = 200
+
+            for i in range(mask.shape[0]):
+                for j in range(mask.shape[1]):
+                    if mask[i,j]:
+                        # Image1
+                        if np.isnan(img1[self.data['x1_2d'].astype('int')[i,j],
+                                         self.data['y1_2d'].astype('int')[i,j]]):
+                            self.data['dy_2d'][i,j] = np.nan
+                            self.data['dx_2d'][i,j] = np.nan
+                        # Image2
+                        if np.isnan(img2[self.data['x1_2d'].astype('int')[i,j],
+                                         self.data['y1_2d'].astype('int')[i,j]]):
+                            self.data['dy_2d'][i,j] = np.nan
+                            self.data['dx_2d'][i,j] = np.nan
+
+                        # End points
+                        # Image1
+                        if np.isnan(img1[np.max((0, int(self.data['x1_2d'].astype('int')[i,j] - w))):np.min(
+                                (int(self.data['x1_2d'].astype('int')[i,j] + w), img1.shape[0])),
+                                    np.max((0, int(self.data['y1_2d'].astype('int')[i,j] - w))):np.min(
+                                        (int(self.data['y1_2d'].astype('int')[i,j] + w), img1.shape[1]))]).any():
+                            self.data['dx_2d'][i,j] = np.nan
+                            self.data['dy_2d'][i,j] = np.nan
+
+                        # Image2
+                        if np.isnan(img2[np.max((0, int(self.data['x1_2d'].astype('int')[i,j] - w))):np.min(
+                                (int(self.data['x1_2d'].astype('int')[i,j] + w), img2.shape[0])),
+                                    np.max((0, int(self.data['y1_2d'].astype('int')[i,j] - w))):np.min(
+                                        (int(self.data['y1_2d'].astype('int')[i,j] + w), img2.shape[1]))]).any():
+                            self.data['dx_2d'][i,j] = np.nan
+                            self.data['dy_2d'][i,j] = np.nan
+
+                        # Start points
+                        # Image1
+                        if np.isnan(img1[np.max((0, int(self.data['x0_2d'].astype('int')[i, j] - w))):np.min(
+                                (int(self.data['x0_2d'].astype('int')[i, j] + w), img1.shape[0])),
+                                    np.max((0, int(self.data['y0_2d'].astype('int')[i, j] - w))):np.min(
+                                        (int(self.data['y0_2d'].astype('int')[i, j] + w), img1.shape[1]))]).any():
+                            self.data['dx_2d'][i, j] = np.nan
+                            self.data['dy_2d'][i, j] = np.nan
+
+                        # Image2
+                        if np.isnan(img2[np.max((0, int(self.data['x0_2d'].astype('int')[i, j] - w))):np.min(
+                                (int(self.data['x0_2d'].astype('int')[i, j] + w), img2.shape[0])),
+                                    np.max((0, int(self.data['y0_2d'].astype('int')[i, j] - w))):np.min(
+                                        (int(self.data['y0_2d'].astype('int')[i, j] + w), img2.shape[1]))]).any():
+                            self.data['dx_2d'][i, j] = np.nan
+                            self.data['dy_2d'][i, j] = np.nan
+
+
+            ###########################################
+            # End testing
+            ###########################################
+
+            """
+            # Filter end points with NaN values
             # Set drift vector end points to 0 where is nan
             self.data['y1_2d'][np.isnan(self.data['y1_2d'])] = 0
             self.data['x1_2d'][np.isnan(self.data['x1_2d'])] = 0
@@ -633,6 +714,8 @@ class driftField:
 
             self.data['dx_2d'][np.isnan(img2[np.rint(self.data['x0_2d']).astype('int'),
                                              np.rint(self.data['y0_2d']).astype('int')])] = np.nan
+                                             
+            
 
             # Iterate over all vectors and exclude with vicinity with NaNs
             w = 200
@@ -645,8 +728,10 @@ class driftField:
                         self.data['dx_2d'][i, j] = np.nan
                         self.data['dy_2d'][i, j] = np.nan
             print('Done.\n')
+            """
         else:
             pass
+
 
         y0, x0, dy, dx = self.data['y0_2d'].ravel(), self.data['x0_2d'].ravel(), self.data['dy_2d'].ravel(), self.data[
             'dx_2d'].ravel()
