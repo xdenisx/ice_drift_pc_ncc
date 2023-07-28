@@ -1,8 +1,8 @@
 # SAR image alignment by ice drift compensation
 
-This repository contains a Python class for two SAR images alignment by sea ice drift compensation [Eriksson et al, 2022](https://ieeexplore.ieee.org/abstract/document/9884292).
+This repository contains a Python class for alignment of a pair of SAR sea ice images by the drift compensation and based on work [Eriksson et al, 2022](https://ieeexplore.ieee.org/abstract/document/9884292).
 The code operates with two sequential SAR images in geotiff format and a text file containing ice displacements.
-The displacements can be in either image coordinates - row/column numbers or in geographical coordinates - lat/lon (then parameter ``geocoded`` must be set to ``True``).
+The displacements can be provided either in pixel coordinates (row/column number) or in geographical coordinates (latitude/longitude). In case of using geographical coordinates a parameter ``geocoded`` must be set to ``True``.
 
 <br><br>
 An example of the displacement file content (image coordinates):
