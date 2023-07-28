@@ -5,7 +5,7 @@ The code operates with two sequential SAR images in geotiff format and a text fi
 The displacements can be provided either in pixel coordinates (row/column number) or in geographical coordinates (latitude/longitude). In case of using geographical coordinates a parameter ``geocoded`` must be set to ``True``.
 
 <br><br>
-An example of the displacement file content (image coordinates):
+An example of the displacement file content (pixel coordinates):
 <br><br>
 ```
 # x0, y0, dx, dy
