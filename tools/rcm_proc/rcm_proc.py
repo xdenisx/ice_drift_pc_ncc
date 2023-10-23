@@ -7,6 +7,7 @@ from osgeo import gdal, osr
 import xml.etree.ElementTree as ET
 import re
 from pathlib import Path
+import shutil
 
 class dataRCM:
 	def __init__(self, file_path=None, out_path=None):
@@ -257,10 +258,30 @@ class dataRCM:
 								output_path=out_fname,
 								gcp_epsg=gcp_epsg,
 								output_epsg=epsg,
-								pixel_size=pixel_size)
+								pixel_size=pixel_size,
+								resampling=resampling)
 
 			# We don't need a geotiff with GCPs anymore
 			# print(f'''\nRemoving {self.pols[ipol]['tiff_file_dB']}''')
 			os.remove(self.pols[ipol]['tiff_file_dB'])
 			self.pols[ipol]['tiff_file_dB'] = None
 			print('Done.')
+
+	def delete_temp(self):
+		'''
+		Delete unziped folders
+		'''
+
+		for root, dirs, files in os.walk(self.unzip_dir):
+			for idir in dirs:
+				if idir.find(os.path.basename(self.file_path).split('.')[0])>=0:
+					print(f'''### {idir}''')
+					shutil.rmtree(f'''{root}/{idir}''')
+				else:
+					pass
+
+			for ifile in files:
+				if ifile.find(os.path.basename(self.file_path).split('.')[0])>=0 and ifile.endswith('xml'):
+					os.remove(f'''{root}/{ifile}''')
+				else:
+					pass
