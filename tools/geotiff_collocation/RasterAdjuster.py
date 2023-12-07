@@ -119,15 +119,16 @@ class RasterAdjuster():
                mask1_fname=None,
                raster2_export_path=None,
                mask2_fname=None,
-               mask_export_path=None):
+               mask_export_path=None,
+               normalize=False):
 
         if not raster1_export_path:
             raster1_export_path = self.__update_path(self.__raster1_path)
         if not raster2_export_path:
             raster2_export_path = self.__update_path(self.__raster2_path)
             
-        self.__save_raster_to_gtiff(self.raster1, raster1_export_path)
-        self.__save_raster_to_gtiff(self.raster2, raster2_export_path)
+        self.__save_raster_to_gtiff(self.raster1, raster1_export_path, normalize)
+        self.__save_raster_to_gtiff(self.raster2, raster2_export_path, normalize)
         print(f'### mask1: {mask1_fname}')
         print(f'### mask2: {mask2_fname}')
         self.__save_mask_to_gtiff(self.raster1, mask_export_path, mask1_fname, 1)
@@ -214,7 +215,7 @@ class RasterAdjuster():
          extension = filename.split('.')[1]
          return os.path.join(folder,filename_raw+'_adjusted.'+extension)
     
-    def __save_raster_to_gtiff(self,raster,gtiff_path):
+    def __save_raster_to_gtiff(self, raster=None, gtiff_path=None, normalize=False):
         driver = gdal.GetDriverByName("GTiff")
         dataType = raster.GetRasterBand(1).DataType
         dataset = driver.Create(gtiff_path, raster.RasterXSize, raster.RasterYSize, raster.RasterCount, dataType)
@@ -224,6 +225,11 @@ class RasterAdjuster():
         while i<= raster.RasterCount:
             data = raster.GetRasterBand(i).ReadAsArray()
             data[data == 0] = np.nan
+            if normalize:
+                data = (data - np.nanmin(data)) / (np.nanmax(data) - np.nanmin(data))
+                data *= 255
+            else:
+                pass
             # print('\nNumber of 0: %s\n' % len(data[data == 0]))
             dataset.GetRasterBand(i).WriteArray(data)
             dataset.GetRasterBand(i).SetDescription(raster.GetRasterBand(i).GetDescription())

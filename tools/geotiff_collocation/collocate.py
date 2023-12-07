@@ -224,7 +224,8 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
                          mask1_fname=f'''mask_{os.path.basename(f1)}''',
                          raster2_export_path=raster2_export_path,
                          mask2_fname=f'''mask_{os.path.basename(f2)}''',
-                         mask_export_path=mask_export_path)
+                         mask_export_path=mask_export_path,
+                         normalize=normalize)
         
         # Insert metadata
         metadata = {}
@@ -325,16 +326,19 @@ if __name__ == "__main__":
     days_lag = float(sys.argv[3])
     in_path2 = None
     if len( sys.argv ) >= 5:
-    	in_path2 = sys.argv[4]
+        in_path2 = sys.argv[4]
     days_minimum_lag = float(0)
     if len( sys.argv ) >= 6:
-    	days_minimum_lag = float(sys.argv[5])
+        days_minimum_lag = float(sys.argv[5])
     intersect_ratio = float(0.34)
     if len( sys.argv ) >= 7:
-    	intersect_ratio = float(sys.argv[6])
+        intersect_ratio = float(sys.argv[6])
     max_drift_speed = float(0.4)
     if len( sys.argv ) >= 8:
-    	max_drift_speed = float(sys.argv[7])
+        max_drift_speed = float(sys.argv[7])
+    if len( sys.argv ) >= 8:
+        normalize = bool(sys.argv[8])
+        print('Data will be normalized to 0 255')
     
     try:
         os.makedirs(out_path)
