@@ -251,7 +251,7 @@ def handlePair( image_path, deformation_path, output_path, transform_type, poly_
 	os.makedirs(output_path, exist_ok=True)
 
 	# Align images and save
-	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order, back_alignment = True )
+	performAlignment( path1, path2, deformation_path, output_path, transform_type = transform_type, padding = "constant", polynomial_order = poly_order, back_alignment = False )
 
 
 # If run as script
@@ -307,7 +307,10 @@ if __name__ == "__main__":
 				print( "Running pair #" + str(iter_output_path.name) )
 
 				# Call for alignment
-				handlePair( iter_path, iter_deform_path, iter_output_path, transform_type, poly_order, back_alignment=True )
+				try:
+					handlePair( iter_path, iter_deform_path, iter_output_path, transform_type, poly_order, back_alignment=True )
+				except:
+					pass
 				print("")
 
 

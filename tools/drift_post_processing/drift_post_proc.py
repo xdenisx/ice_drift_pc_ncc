@@ -607,8 +607,8 @@ class driftField:
             mask = np.ma.make_mask(self.data['y1_2d'].copy())
 
             # End points outside an image
-            mask[np.abs(self.data['x1_2d']) >= img1.shape[1]] = False
-            mask[np.abs(self.data['y1_2d']) >= img1.shape[0]] = False
+            mask[np.abs(self.data['x1_2d']) >= img1.shape[0]] = False
+            mask[np.abs(self.data['y1_2d']) >= img1.shape[1]] = False
 
             # NaN values
             mask[np.isnan(self.data['y1_2d'])] = False
