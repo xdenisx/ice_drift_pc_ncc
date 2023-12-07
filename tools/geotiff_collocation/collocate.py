@@ -154,7 +154,7 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
         
         raster1_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f1))
         raster2_export_path='%s/%03d/%s' % (out_path, id_pair, os.path.basename(f2))
-        mask_export_path='%s/%03d/mask_%s' % (out_path, id_pair, os.path.basename(f1))
+        mask_export_path='%s/%03d' % (out_path, id_pair)
         # If file already exists
         if os.path.isfile( raster1_export_path ):
             return 0
@@ -221,8 +221,10 @@ def check_save_pair(f1, f2, out_path, id_pair, polarizations, intersect_ratio, m
             return 0
             
         adjuster1.export(raster1_export_path=raster1_export_path,
-                        raster2_export_path=raster2_export_path,
-                        mask_export_path=mask_export_path)
+                         mask1_fname=f'''mask_{os.path.basename(f1)}''',
+                         raster2_export_path=raster2_export_path,
+                         mask2_fname=f'''mask_{os.path.basename(f2)}''',
+                         mask_export_path=mask_export_path)
         
         # Insert metadata
         metadata = {}

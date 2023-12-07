@@ -114,7 +114,13 @@ class RasterAdjuster():
     def get_raster2_as_array(self,band_number=1):
         return self.raster2.GetRasterBand(band_number).ReadAsArray()
         
-    def export(self,raster1_export_path=None, raster2_export_path=None, mask_export_path=None):
+    def export(self,
+               raster1_export_path=None,
+               mask1_fname=None,
+               raster2_export_path=None,
+               mask2_fname=None,
+               mask_export_path=None):
+
         if not raster1_export_path:
             raster1_export_path = self.__update_path(self.__raster1_path)
         if not raster2_export_path:
@@ -122,11 +128,11 @@ class RasterAdjuster():
             
         self.__save_raster_to_gtiff(self.raster1, raster1_export_path)
         self.__save_raster_to_gtiff(self.raster2, raster2_export_path)
-        self.__save_mask_to_gtiff(self.raster1, self.raster2, mask_export_path)
-    
-    '''Service functions'''
-        
-        
+        print(f'### mask1: {mask1_fname}')
+        print(f'### mask2: {mask2_fname}')
+        self.__save_mask_to_gtiff(self.raster1, mask_export_path, mask1_fname, 1)
+        self.__save_mask_to_gtiff(self.raster2, mask_export_path, mask2_fname, 1)
+
     def __reproject_raster_to_projection(self,raster,dest_projection):
         source_projection = self.__get_projection(raster)
         output_raster = gdal.Warp('', raster, srcSRS=source_projection, dstSRS=dest_projection, format='MEM')
@@ -282,42 +288,41 @@ class RasterAdjuster():
         else:
             print('\nCould not find land data in %s!\n' % path_to_coastline)
 
-    def __save_mask_to_gtiff(self, raster1, raster2, gtiff_path):
+    # Testing
+    def __save_mask_to_gtiff(self, raster=None, mask_path=None, mask_fname=None, band_id=1):
+        print('\n### Generating mask...')
+
+        # Create mask tiff
         driver = gdal.GetDriverByName("GTiff")
         dataType = gdal.GDT_Byte
+        mask_fpath = f'''{mask_path}/{mask_fname}'''
+        print(f'mask_path: {mask_fpath}')
+        dataset = driver.Create(mask_fpath,
+                                raster.RasterXSize,
+                                raster.RasterYSize,
+                                raster.RasterCount,
+                                dataType)
+        dataset.SetProjection(raster.GetProjection())
+        dataset.SetGeoTransform(raster.GetGeoTransform())
 
-        dataset = driver.Create(gtiff_path, raster1.RasterXSize, raster1.RasterYSize, raster1.RasterCount, dataType)
-        dataset.SetProjection(raster1.GetProjection())
-        dataset.SetGeoTransform(raster1.GetGeoTransform())
+        # Open a raster to generate a mask from
+        data = raster.GetRasterBand(band_id).ReadAsArray()
+        mask_array = np.copy(data)
+        mask_array[:,:] = 0
+        mask_array[(~np.isnan(data)) & (data!=0)] = 255
 
-        i = 1
-        arr1 = raster1.GetRasterBand(i).ReadAsArray()
-        arr2 = raster2.GetRasterBand(i).ReadAsArray()
-
-        mask_array = np.copy(arr1)
-        mask_array[:, :] = 255
-        mask_array[np.isnan(arr1)] = 0
-        mask_array[np.isnan(arr2)] = 0
-
-        #print(mask_array)
-
-        ##########################
-        # Create land mask
-        ##########################
         print('\nApplying land mask...')
         # Get land mask
-        print(raster1)
-        land_mask = self.__get_land_mask(raster1)
-
-        # Apply land mask
-        print('###################')
+        land_mask = self.__get_land_mask(raster)
         mask_array[land_mask == 255] = 0
-        print('Done.\n')
-        ##########################
-        # End create lamd mask
-        ##########################
+        print('Land masking Done.\n')
 
-        while i <= raster1.RasterCount:
+        i = 1
+        while i <= raster.RasterCount:
             dataset.GetRasterBand(i).WriteArray(mask_array)
             i += 1
+
         del dataset
+        del data
+
+        print('### A mask generating done!\n')
