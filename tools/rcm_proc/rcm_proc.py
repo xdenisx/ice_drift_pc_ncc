@@ -232,7 +232,7 @@ class dataRCM:
 		# If pixel size is not None apply downsampling
 		if pixel_size is not None:
 			print(f'Downsampling to {pixel_size} m')
-			downsampled_dst_path = '{}/{}m_{}'.format(os.path.dirname(dst_path), pixel_size, os.path.basename(dst_path))
+			downsampled_dst_path = '{}/UPS_{}'.format(os.path.dirname(dst_path), os.path.basename(dst_path))
 			ds_tiff = gdal.Warp(downsampled_dst_path, dst_ds, format='Gtiff', xRes=pixel_size, yRes=pixel_size)
 			ds_tiff = None
 			os.remove(dst_path)
@@ -244,7 +244,9 @@ class dataRCM:
 
 	def export_projected_geotiff(self, output_path=None, lut_name='lut_sz_2D', gcp_epsg=4326, epsg=3875,
 								 pixel_size=None,
-								 resampling=gdal.GRA_NearestNeighbour):
+								 resampling=gdal.GRA_NearestNeighbour,
+								 format_filename=False,
+								 pref=None):
 		''' Export geotiff projected '''
 
 		os.makedirs(output_path, exist_ok=True)
@@ -253,7 +255,19 @@ class dataRCM:
 
 		for ipol in self.pols.keys():
 			# Warp geotiff file with GCPs to desired projection
-			out_fname = f'''{output_path}/{epsg}_{os.path.basename(self.file_path).split('.')[0]}_{ipol}.tiff'''
+			if not format_filename:
+				out_fname = f'''{output_path}/{epsg}_{os.path.basename(self.file_path).split('.')[0]}_{ipol}.tiff'''
+			else:
+				# Formatted filename for the drift pipeline
+				# UPS_hh_ALOS2_XX_XXXX_XXXX_20190629T143413_20190629T143423_0000324300_001001_ALOS2275382000-190629.tiff
+				# Get instrument
+				instriment = re.findall(r'RCM\d', os.path.basename(self.file_path))[0]
+				# Get date and time
+				dt_full = re.findall(r'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d', os.path.basename(self.file_path))[0]
+				idate, itime = dt_full.split('_')
+				out_fname = f'''{output_path}/{ipol.lower()}_{instriment}_XX_XXXX_XXXX_{idate}T{itime}.tiff'''
+				print(f'Generating: {out_fname}')
+
 			self.warp_with_gcps(input_path=self.pols[ipol]['tiff_file_dB'],
 								output_path=out_fname,
 								gcp_epsg=gcp_epsg,
