@@ -217,7 +217,10 @@ class RasterAdjuster():
     
     def __save_raster_to_gtiff(self, raster=None, gtiff_path=None, normalize=False):
         driver = gdal.GetDriverByName("GTiff")
-        dataType = raster.GetRasterBand(1).DataType
+        if normalize:
+            dataType = gdal.GDT_Byte
+        else:
+            dataType = raster.GetRasterBand(1).DataType
         dataset = driver.Create(gtiff_path, raster.RasterXSize, raster.RasterYSize, raster.RasterCount, dataType)
         dataset.SetProjection(raster.GetProjection())
         dataset.SetGeoTransform(raster.GetGeoTransform())
