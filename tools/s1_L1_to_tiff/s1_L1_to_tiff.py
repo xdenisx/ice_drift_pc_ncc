@@ -119,7 +119,7 @@ for root, d_names, f_names in os.walk(in_path):
                         elif 'GRDH' in out_tiff_name:
                             res = resolution['GRDH']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=f_mask, supress_speckle=True)
+                                         mask=f_mask, supress_speckle=False)
 
                         # Delete calibrated unprojected tiff
                         try:
