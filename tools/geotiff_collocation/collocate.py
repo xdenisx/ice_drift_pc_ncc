@@ -319,7 +319,7 @@ def isPairAlreadyPresent( file1, file2, parent_folder ):
 
 
 if __name__ == "__main__":
-    
+    print('starting')
     # Get parameters
     in_path = sys.argv[1]
     out_path = sys.argv[2]
@@ -336,6 +336,7 @@ if __name__ == "__main__":
     max_drift_speed = float(0.4)
     if len( sys.argv ) >= 8:
         max_drift_speed = float(sys.argv[7])
+    normalize = False
     if len( sys.argv ) >= 8:
         normalize = bool(sys.argv[8])
         print('Data will be normalized to 0 255')
@@ -345,8 +346,8 @@ if __name__ == "__main__":
     except:
         pass
     
-    polarizations = ['HH', 'VV', 'HV', 'VH']
-    polarizations = [ x.lower() for x in polarizations ]
+    polarizations = ['HH', 'VV', 'HV', 'VH', 'N']
+    #polarizations = [ x.lower() for x in polarizations ]
     files_pref = 'UPS'
 
     # go through the first in path tree and sort out the names
@@ -357,6 +358,7 @@ if __name__ == "__main__":
             f_names.append('%s/%s' % (root, fname))
     f_names = [ff for ff in f_names if (ff.endswith('tiff') and any( polarization in ff for polarization in polarizations)) ]
     f_names.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
+    print(f'f_names: {f_names}')
 
     # go through the second in path tree and sort out the names    
     f_names2 = f_names
@@ -367,7 +369,7 @@ if __name__ == "__main__":
                 #f_names.sort()
                 f_names2.append('%s/%s' % (root, fname))
         f_names2 = [ff for ff in f_names2 if (ff.endswith('tiff') and any( polarization in ff for polarization in polarizations) ) ]
-        f_names2.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)            
+        f_names2.sort(key=lambda x: os.path.basename(x).split('_')[6], reverse=True)
     
     # Go through all geotiff images first path
     for f_name in f_names:
@@ -377,13 +379,16 @@ if __name__ == "__main__":
 
             ifile = f_name
             date_m = re.findall(r'\d{8}T\d{6}', f_name)
-    
+            print(date_m)
+            print('####')
+            
             if not date_m is None:
                 dt0_str = '%s/%s/%sT%s:%s:%s' % (date_m[0][0:4], date_m[0][4:6], date_m[0][6:8],
                                                  date_m[0][9:11], date_m[0][11:13],date_m[0][13:15])
     
                 # Date time of a current file
                 dt0 = datetime.strptime(dt0_str, '%Y/%m/%dT%H:%M:%S')
+                print(dt0)
     
                 # Date time of a current file minus time lag
                 dt0_lag = dt0 - timedelta(days=days_lag)
@@ -393,6 +398,7 @@ if __name__ == "__main__":
     
                 # try to find files within i days
                 for f_name2 in f_names2:
+                    print('#### fname2')
                     if f_name2 != f_name:
                         ifile2 = f_name2 #'%s/%s' % (root, f_name2)
                         # If not the same polarization in both files
@@ -404,12 +410,15 @@ if __name__ == "__main__":
                         dt_i_str = '%s/%s/%sT%s:%s:%s' % (date_m2[0][0:4], date_m2[0][4:6], date_m2[0][6:8],
                                                          date_m2[0][9:11], date_m2[0][11:13], date_m2[0][13:15])
                         dt_i = datetime.strptime(dt_i_str, '%Y/%m/%dT%H:%M:%S')
+
     
                         # If the i date within current time gap
                         if ( ( (dt_i <= dt0_minimum_lag) and (dt_i >= dt0_lag) ) or ( (dt_i >= dt0_minimum_lag_plus) and (dt_i <= dt0_lag_plus) ) ):
+                            print(f'dt_i {dt_i}')
     
                             # See if pair is already represented
                             if not isPairAlreadyPresent( ifile, ifile2, out_path ):
+                                print('making...')
 
                                 # Get ID 
                                 id_pair = acquireID(out_path) 

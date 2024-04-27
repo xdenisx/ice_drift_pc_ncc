@@ -246,7 +246,8 @@ class dataRCM:
 								 pixel_size=None,
 								 resampling=gdal.GRA_NearestNeighbour,
 								 format_filename=False,
-								 pref=None):
+								 pref=None,
+								 normalize=False):
 		''' Export geotiff projected '''
 
 		os.makedirs(output_path, exist_ok=True)

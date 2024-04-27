@@ -228,7 +228,7 @@ def get_land_mask(ds_tiff):
     else:
         print('\nCould not find land data in %s!\n' % path_to_coastline)
 
-def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False, supress_speckle=False):
+def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False, supress_speckle=False, normalize_255=False):
     # 1) creating CoordinateTransformation:
     target = osr.SpatialReference()
     target.ImportFromEPSG(t_srs)
@@ -290,6 +290,12 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False, 
 
         arr[arr == 0] = np.nan
 
+        if normalize_255 == True:
+            print('\n##### NORMALIZE ######\n')
+            arr = (arr - np.nanmin(arr)) * (255 / (np.nanmax(arr) - np.nanmin(arr)))
+        else:
+            print('\n##### FALSE NORMALIZE ######\n')
+
         # Save mask with nan values
         if mask:
             out_path_mask = '%s/mask_%s' % (os.path.dirname(out_path), os.path.basename(out_path))
@@ -325,13 +331,23 @@ def reproject_ps(tif_path, out_path, t_srs, res, disk_output=False, mask=False, 
 
         # Rescale
         print('\nRescaling...')
-        arr_out = np.clip(arr, db_min, db_max)
-        print('Rescaling done.')
 
+        if normalize_255==False:
+            arr_out = np.clip(arr, db_min, db_max)
+        else:
+            arr_out = arr
+            temp = np.nanmean(arr_out)
+            print(f'{temp}!!!')
+        print('Rescaling done.')
 
         print('\nWriting geotiff...')
         driver = gdal.GetDriverByName('GTiff')
-        outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Float32)
+
+        if normalize_255==False:
+            outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Float32)
+        else:
+            outdata = driver.Create(out_path, cols, rows, 1, gdal.GDT_Byte)
+
         outdata.SetGeoTransform(ds_wrap.GetGeoTransform())
         outdata.SetProjection(ds_wrap.GetProjection())
         outdata.GetRasterBand(1).WriteArray(arr_out)

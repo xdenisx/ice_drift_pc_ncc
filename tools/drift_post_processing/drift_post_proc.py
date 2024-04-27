@@ -116,13 +116,22 @@ class driftField:
         Y = np.arange(image.RasterYSize)
         X, Y = np.meshgrid(X, Y)
         lat, lon = lm.raster2LatLon(X.reshape((-1)), Y.reshape((-1)))
-        getattr(self, pref)['lats'] = lat.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
-        getattr(self, pref)['lons'] = lon.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
+        try:
+            getattr(self, pref)['lats'] = lat.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
+            getattr(self, pref)['lons'] = lon.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
+            img_z_shape = 1
+        except:
+            getattr(self, pref)['lats'] = lat.reshape(image.ReadAsArray().shape[0], image.ReadAsArray().shape[1])
+            getattr(self, pref)['lons'] = lon.reshape(image.ReadAsArray().shape[0], image.ReadAsArray().shape[1])
+            img_z_shape = 0
         gt = image.GetGeoTransform()
         getattr(self, pref)['gt'] = gt
         getattr(self, pref)['proj'] = image.GetProjection()
         getattr(self, pref)['shape'] = (image.RasterYSize, image.RasterXSize)
-        getattr(self, pref)['data'] = image.ReadAsArray()[0]
+        if img_z_shape > 0:
+            getattr(self, pref)['data'] = image.ReadAsArray()[0]
+        else:
+            getattr(self, pref)['data'] = image.ReadAsArray()
         del image
 
     def reader_mat(self, glob_var_name='OUT'):
@@ -598,6 +607,7 @@ class driftField:
 
             img1 = self.tiff_data['data']
             img2 = self.tiff_data2['data']
+            print(f'### shape: {img1.shape}')
 
             ######################################
             # Start testing

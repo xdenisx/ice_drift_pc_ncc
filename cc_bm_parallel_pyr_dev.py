@@ -650,11 +650,12 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
         # print '%s  %s  %s  %s' % (y[ch], x[ch], u[ch], v[ch])
 
         if np.isnan(x2[i]) == False and np.isnan(y2[i]) == False:
-            xx1 = geotransform[0] + float(x1[i]) * pixelWidth
-            yy1 = geotransform[3] + float(y1[i]) * pixelHeight
+            #!TODO: Need to be fixed!
+            yy1 = geotransform[0] + float(x1[i]) * pixelWidth
+            xx1 = geotransform[3] + float(y1[i]) * pixelHeight
 
-            xx2 = geotransform[0] + float(x2[i]) * pixelWidth
-            yy2 = geotransform[3] + float(y2[i]) * pixelHeight
+            yy2 = geotransform[0] + float(x2[i]) * pixelWidth
+            xx2 = geotransform[3] + float(y2[i]) * pixelHeight
 
             # print(xx1, yy1)
 

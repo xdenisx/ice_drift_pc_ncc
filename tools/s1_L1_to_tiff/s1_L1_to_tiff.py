@@ -22,6 +22,12 @@ proj_epsg = 5041
 if len(sys.argv) >= 6:
     proj_epsg=int(sys.argv[5])
 
+normalize_255 = False
+if len(sys.argv) >= 7:
+    normalize_255 = bool(sys.argv[5])
+    print('Image will be normalized!')
+
+
 reproject = True
 save_metadata = True
 
@@ -114,12 +120,12 @@ for root, d_names, f_names in os.walk(in_path):
                         if 'GRDM' in out_tiff_name:
                             res = resolution['GRDM']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=f_mask, supress_speckle=False)
+                                         mask=f_mask, supress_speckle=True, normalize_255=normalize_255)
 
                         elif 'GRDH' in out_tiff_name:
                             res = resolution['GRDH']
                             reproject_ps(out_calib_name, out_tiff_name, proj_epsg, res, disk_output=True,
-                                         mask=f_mask, supress_speckle=False)
+                                         mask=f_mask, supress_speckle=True, normalize_255=normalize_255)
 
                         # Delete calibrated unprojected tiff
                         try:
