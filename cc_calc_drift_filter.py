@@ -147,7 +147,7 @@ class CalcDriftFilter(object):
 		#data = np.vstack((uu, vv)).T
 
 		x1, y1, uu, vv, cc = np.array(x1), np.array(y1),\
-							np.array(uu, np.float), np.array(vv, np.float), np.array(cc, np.float)
+							np.array(uu, dtype='f'), np.array(vv, dtype='f'), np.array(cc, dtype='f')
 
 		#  Radius based filtering
 		vector_start_data = np.vstack((x1, y1)).T
@@ -233,8 +233,8 @@ class CalcDriftFilter(object):
 		'''
 
 		# Mask (=NaN) bad values
-		uu = np.array(uu, np.float)
-		vv = np.array(vv, np.float)
+		uu = np.array(uu, dtype='f')
+		vv = np.array(vv, dtype='f')
 		uu[iidx_mask] = np.nan
 		vv[iidx_mask] = np.nan
 		cc[iidx_mask] = 0.

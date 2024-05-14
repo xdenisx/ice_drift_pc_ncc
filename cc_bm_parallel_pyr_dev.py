@@ -540,7 +540,7 @@ def outliers_filtering(x1, y1, uu, vv, cc, radius=256, angle_difference=5, lengt
     #data = np.vstack((uu, vv)).T
 
     x1, y1, uu, vv, cc = np.array(x1), np.array(y1),\
-                         np.array(uu, np.float), np.array(vv, np.float), np.array(cc, np.float)
+                         np.array(uu, float), np.array(vv, float), np.array(cc, float)
 
     #  Radius based filtering
     vector_start_data = np.vstack((x1, y1)).T
@@ -1075,7 +1075,8 @@ def create_geotiff(suffix, data, NDV, GeoT, Projection):
     dataType = gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype)
     # NaNs to the no data value
     data[np.isnan(data)] = NDV
-    if type(dataType) != np.int:
+    if dataType != 7:
+        print(f'####234 {type(dataType)}')
         if dataType.startswith('gdal.GDT_') == False:
             dataType = eval('gdal.GDT_' + dataType)
     newFileName = suffix + '_test.tif'
