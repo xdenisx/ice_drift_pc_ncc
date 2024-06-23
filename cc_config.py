@@ -22,7 +22,7 @@ class Config(object):
 		### Section ###
 		### calculation params ###
 
-		self.speckle_filtering = True
+		self.speckle_filtering = False
 		self.speckle_filter_names = ['Anisd']
 		self.speckle_filter_name = 'Anisd'
 		self.speckle_filter_parameters = {
@@ -42,7 +42,7 @@ class Config(object):
 			},
 			'LapGauss': {
 				'N': 9,
-				'ddepth': cv2.CV_16S,
+				'ddepth': None, #cv2.CV_16S,
 				'kernel_size': 5
 			}
 			}
@@ -60,7 +60,7 @@ class Config(object):
 		self.pixel_size = pixelSizeX
 		ds = None
 
-		self.rescale_apply = True
+		self.rescale_apply = False
 		self.rescale_factor = 1.
 
 		self.plot_correlation_peaks = False

@@ -166,7 +166,7 @@ class CalcDriftFilter(object):
 			if np.isnan(vv[i]):
 				idx_mask.append(i)
 			else:
-				px = 2
+				px = 1
 
 				y1_max = int(min(y1[i] + px, self.Conf.img1.shape[0] - 1))
 				y1_min = int(max(y1[i] - px, 0))

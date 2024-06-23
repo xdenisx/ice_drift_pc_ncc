@@ -131,8 +131,11 @@ class RasterAdjuster():
         self.__save_raster_to_gtiff(self.raster2, raster2_export_path, normalize)
         print(f'### mask1: {mask1_fname}')
         print(f'### mask2: {mask2_fname}')
-        self.__save_mask_to_gtiff(self.raster1, mask_export_path, mask1_fname, 1)
-        self.__save_mask_to_gtiff(self.raster2, mask_export_path, mask2_fname, 1)
+        try:
+            self.__save_mask_to_gtiff(self.raster1, mask_export_path, mask1_fname, 1)
+            self.__save_mask_to_gtiff(self.raster2, mask_export_path, mask2_fname, 1)
+        except:
+            pass
 
     def __reproject_raster_to_projection(self,raster,dest_projection):
         source_projection = self.__get_projection(raster)

@@ -135,7 +135,7 @@ def check_borders(im):
         while j < im.shape[1] - 1 and im[i,j] > 0:
             j += 1
         else:
-            if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 255):
+            if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 255 or np.isnan(im[i,j])):
                 while im[i,j] == 0 and j < im.shape[1] - 1:
                     j += 1
                     ch += 1
@@ -612,7 +612,17 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
     if data_format not in ['geojson', 'shp']:
         print('Invalid format')
         return
+    x1 = x1[~np.isnan(u)]
+    y1 = y1[~np.isnan(v)]
+    u = u[~np.isnan(u)]
+    v = v[~np.isnan(v)]
 
+    #x1 = x1[u>-200.]
+    #y1 = y1[v>-200.]
+    
+    #u = u[u>-200.]
+    #v = v[v>-200.]
+   
     x2 = x1 + u
     y2 = y1 + v
 
@@ -646,10 +656,10 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
 
     print('Pixel size (%s, %s) m' % (pixelWidth, pixelHeight))
 
-    for i in range(len(x1)):
+    for i in range(len(x1)-1):
         # print '%s  %s  %s  %s' % (y[ch], x[ch], u[ch], v[ch])
 
-        if np.isnan(x2[i]) == False and np.isnan(y2[i]) == False:
+        if np.isnan(u[i]) == False and np.isnan(v[i]) == False:
             #!TODO: Need to be fixed!
             yy1 = geotransform[0] + float(x1[i]) * pixelWidth
             xx1 = geotransform[3] + float(y1[i]) * pixelHeight
@@ -657,13 +667,14 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
             yy2 = geotransform[0] + float(x2[i]) * pixelWidth
             xx2 = geotransform[3] + float(y2[i]) * pixelHeight
 
-            # print(xx1, yy1)
+            #print(x1[i], y1[i])
+            #print(x2[i], y2[i])
 
-            latlon = transform.TransformPoint(float(xx1), float(yy1))
+            latlon = transform.TransformPoint(float(yy1), float(xx1))
             lon1 = latlon[0]
             lat1 = latlon[1]
 
-            latlon = transform.TransformPoint(float(xx2), float(yy2))
+            latlon = transform.TransformPoint(float(yy2), float(xx2))
             lon2 = latlon[0]
             lat2 = latlon[1]
 
@@ -716,7 +727,6 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
             print('Impossible to create geojson, sorry: %s' % str(Exception))
 
     print('Geojson creation success!\n')
-
 def export_to_text(x1, y1, u, v, output_path):
     print('\nStart exporting to vector file...')
 
@@ -1139,9 +1149,10 @@ def cc(arguments):
         # Check for black stripes
         flag1 = check_borders(im1)
         flag2 = check_borders(im2)
+        print('### Flag 1,2: {flag1}, {flag2}')
 
         # No black borders in the first image
-        if flag1 == 0: # and flag2 == 0:
+        if flag1 == 0 and flag2 == 0:
             u_direct, v_direct, result = matching(im1, im2)
             # Peak maximum CC
             cc_max = np.max(result)
@@ -1321,7 +1332,7 @@ def apply_anisd(img, gamma=0.25, step=(1., 1.), ploton=False):
             fig.canvas.draw()
             # sleep(0.01)
 
-    return cv2.convertScaleAbs(imgout)
+    return imgout #cv2.convertScaleAbs(imgout)
 
 #################################################################################
 #################################################################################
@@ -1458,19 +1469,7 @@ if __name__ == '__main__':
 
     plot_arrows('%s/02_spikes_%s_%s.png' % (Conf.res_dir, pref, Conf.out_fname), Conf.img2, Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f, Filter.ccc_f,
                 arrwidth=0.002, headwidth=5.5, flag_color=True)
-
-    #####################
-    #### Defo calculate ####
-    #####################
-    print('\n### Start deformation calculation...')
-
-    # init defo calculator class
-    Defo = cc_calc_defo.CalcDefo(Conf, Calc, Filter)
-    # calculate deformation from the 2D arrays
-    mag_speed, divergence, curl, shear, total_deform, u_2d, v_2d = Defo.calculate_defo()
-
-    print('\n### Success!\n')
-
+                
     #########################
     # EXPORT TO GEO-FORMATS
     #########################
@@ -1496,10 +1495,24 @@ if __name__ == '__main__':
     export_to_text(Filter.xxx_f, Filter.yyy_f, Filter.uuu_f, Filter.vvv_f,
                      '%s/vec/%s_ICEDRIFT_%s.txt' % (Conf.res_dir, files_pref, Conf.out_fname))
 
+
+    #####################
+    #### Defo calculate ####
+    #####################
+    print('\n### Start deformation calculation...')
+
+    # init defo calculator class
+    Defo = cc_calc_defo.CalcDefo(Conf, Calc, Filter)
+    # calculate deformation from the 2D arrays
+    mag_speed, divergence, curl, shear, total_deform, u_2d, v_2d = Defo.calculate_defo()
+
+    print('\n### Success!\n')
+    
     # NPZ file
     export_to_npz(u_2d, v_2d,
                   '%s/vec/%s_ICEDRIFT_%s.npz' % (Conf.res_dir, files_pref, Conf.out_fname))
 
+    
     ################
     # Geotiff
     ################
