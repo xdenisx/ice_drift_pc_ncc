@@ -252,7 +252,7 @@ class CalcDrift(object):
 
 			# Check for black stripes
 			flag1 = self.check_borders(im1)
-			flag2 = self.check_borders(im2)
+			flag2 = self.check_borders(im1)
 
 			# No black borders in the first image
 			if flag1 == 0 and flag2 == 0:
@@ -322,14 +322,14 @@ class CalcDrift(object):
 		ch = 0
 		j = 0
 		for i in range(im.shape[0] - 1):
-			while j < im.shape[1] - 1 and im[i,j] != 0 and im[i,j] != 255:
+			while j < im.shape[1] - 1 and im[i,j] != 0 and im[i,j] != 0:
 				j += 1
 			else:
-				if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 255):
-					while (im[i,j] == 0 or im[i,j] == 255) and j < im.shape[1] - 1:
+				if j < im.shape[1] - 1 and (im[i,j] == 0 or im[i,j] == 0):
+					while (im[i,j] == 0 or im[i,j] == 0) and j < im.shape[1] - 1:
 						j += 1
 						ch += 1
-					if ch >= 15:
+					if ch >= ((24*24)/30.):
 						flag = 1
 						#print('Black stripe detected!')
 						return flag

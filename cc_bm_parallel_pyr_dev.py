@@ -377,7 +377,8 @@ def crop_images(img1, img2, y0, x0):
 
     # Check for black stripes
     flag1 = check_borders(im1)
-    flag2 = check_borders(im2)
+    # !!! Check
+    flag2 = check_borders(im1)
 
     return im1, im2
 
@@ -423,7 +424,8 @@ def cc_bm(arguments):
 
         # Check for black stripes
         flag1 = check_borders(im1)
-        flag2 = check_borders(im2)
+        # !!!TODO: check
+        flag2 = check_borders(im1)
 
         # No black borders in the first image
         if flag1 == 0 and flag2 == 0:
@@ -656,10 +658,10 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
 
     print('Pixel size (%s, %s) m' % (pixelWidth, pixelHeight))
 
-    for i in range(len(x1)-1):
+    for i in range(len(x1)):
         # print '%s  %s  %s  %s' % (y[ch], x[ch], u[ch], v[ch])
 
-        if np.isnan(u[i]) == False and np.isnan(v[i]) == False:
+        if (np.isnan(u[i]) == False and np.isnan(v[i]) == False and v[i]!='nan'):
             #!TODO: Need to be fixed!
             yy1 = geotransform[0] + float(x1[i]) * pixelWidth
             xx1 = geotransform[3] + float(y1[i]) * pixelHeight
@@ -696,14 +698,25 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
             # coords_list.append((lon1, lat1))
 
             if data_format == 'geojson':
-                new_line = geojson.Feature(geometry=geojson.LineString([(lon1, lat1), (lon2, lat2)]),
-                                           properties={'id': str(i),
-                                                       'lat1': lat1,
-                                                       'lon1': lon1,
-                                                       'lat2': lat2,
-                                                       'lon2': lon2,
-                                                       'drift_m': mag,
-                                                       'azimuth': az})
+                if (lon1!=lon2 and lat1!=lat2):
+                    new_line = geojson.Feature(geometry=geojson.LineString([(lon1, lat1), (lon2, lat2)]),
+                                               properties={'id': str(i),
+                                                           'lat1': lat1,
+                                                           'lon1': lon1,
+                                                           'lat2': lat2,
+                                                           'lon2': lon2,
+                                                           'drift_m': mag,
+                                                           'azimuth': az})
+                else:
+                    new_line = geojson.Feature(geometry=geojson.Point((lon1, lat1)),
+                                               properties={'id': str(i),
+                                                           'lat1': lat1,
+                                                           'lon1': lon1,
+                                                           'lat2': lat2,
+                                                           'lon2': lon2,
+                                                           'drift_m': mag,
+                                                           'azimuth': az})
+
                 features.append(new_line)
 
     if data_format == 'shp':
@@ -1148,7 +1161,7 @@ def cc(arguments):
 
         # Check for black stripes
         flag1 = check_borders(im1)
-        flag2 = check_borders(im2)
+        flag2 = check_borders(im1)
         print('### Flag 1,2: {flag1}, {flag2}')
 
         # No black borders in the first image
@@ -1431,18 +1444,19 @@ if __name__ == '__main__':
     exec_t = (time.time() - global_start_time) / 60.
     print('Calculated in--- %.1f minutes ---' % exec_t)
 
-    pref = 'dm'
-    '''
+    pref = 'unfiltered'
+    
     print('\nPlotting...')
     try:
         plot_arrows_from_list(pref, '%s/%s_%s_01.png' % (Conf.res_dir, pref, Conf.out_fname),
-                            Conf.img1, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
+                            Conf.img1, results, arrwidth=0.0021, headwidth=2.5, flag_color=False)
         plot_arrows_from_list(pref, '%s/%s_%s_02.png' % (Conf.res_dir, pref, Conf.out_fname),
-                            Conf.img2, results, arrwidth=0.0021, headwidth=2.5, flag_color=True)
+                            Conf.img2, results, arrwidth=0.0021, headwidth=2.5, flag_color=False)
         print('Plot end!')
     except:
         print('Plot FAULT!')
-    '''
+    
+    
 
     #####################
     #### Filter vectors ####

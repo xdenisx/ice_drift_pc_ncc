@@ -27,6 +27,10 @@ if len(sys.argv) >= 7:
     normalize_255 = bool(sys.argv[5])
     print('Image will be normalized!')
 
+# !TODO: remove    
+remove_zip = True
+print('Remove zip file: %s' % remove_zip)
+
 
 reproject = True
 save_metadata = True
@@ -187,6 +191,11 @@ for root, d_names, f_names in os.walk(in_path):
 
             # Remove unziped SAFE folder
             shutil.rmtree(path_to_safe_file, ignore_errors=True)
+            if remove_zip:
+            	os.remove(ifile)
+            else:
+            	pass
+            
 
         else:
             print('Error with %s' % os.path.basename(out_tiff_name))
