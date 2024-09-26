@@ -3,6 +3,18 @@ Ice drift retrieval algorithm based on combination of normilized cross-correlati
 
 Programmed by: Denis Demchev, Anders Hildeman, Eduard Kazakov, Anton Volkov
 
+To start working with the package we recommend to create conda environment containing all required Python packages first:
+
+```
+$ conda create --name YOUR/ENVIRONMENT/NAME --file /PATH/TO/requirements.txt
+```
+
+and then activate it:
+
+```
+$ conda activate YOUR/ENVIRONMENT/NAME
+```
+
 1. The main script:
 cc_bm_parallel_pyr_dev.py
 
