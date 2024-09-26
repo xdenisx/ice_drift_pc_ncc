@@ -24,10 +24,11 @@ if args.geometry_type == 'point':
     # Create a Point object
     # s = '0,79'
     geom = geojson.Point((float(args.geometry.split(',')[0]), float(args.geometry.split(',')[1])))
-elif args.geometry_type == 'polygon'::
+elif args.geometry_type == 'polygon':
     # Create Polygon object
     # s = '0 79,0 80,10 80,0 79'
-    geom = geojson.Polygon[tuple(int(i) for i in x.split()) for x in args.geometry.split(',')]
+    pass
+    #geom = geojson.Polygon[tuple(int(i) for i in x.split()) for x in args.geometry.split(',')]
 
 with open(args.output_file, 'w') as file:
     geojson.dump(geom, file)
