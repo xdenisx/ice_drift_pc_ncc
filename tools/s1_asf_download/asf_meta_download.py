@@ -119,8 +119,12 @@ if geo_file_geom == 'MultiPolygon':
     coord_str = 'polygon%28%28' + coord_str + '%29%29'
 
 if geo_file_geom == 'Point':
-    coord_str = 'point%28' + '%.1f' % data['features'][0]['geometry']['coordinates'][0] + '+' \
-                + '%.1f' % data['features'][0]['geometry']['coordinates'][1] + '%29'
+    try:
+        coord_str = 'point%28' + '%.1f' % data['geometry']['coordinates'][0] + '+' \
+                    + '%.1f' % data['geometry']['coordinates'][1] + '%29'
+    except:
+        coord_str = 'point%28' + '%.1f' % data['coordinates'][0] + '+' \
+                    + '%.1f' % data['coordinates'][1] + '%29'
 
 if geo_file_geom == 'FeatureCollection':
     for feature in data['features']:

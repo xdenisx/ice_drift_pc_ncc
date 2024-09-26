@@ -11,7 +11,14 @@ from Alaska SAR Facility server you need to create account there. For that, plea
 After the registration is complete you can use the scripts. Then you should create files with a geometry covering an area you are interested.
 You can use QGIS, ArcMap or other software and store it in GeoJSON format.
 
-1. Metadata gathering script
+1. Geometry file creation
+
+Let's create a geojson file with POINT geometry over the Fram Strait
+```
+%run make_geo_file.py point 0,79 /home/denis/git/dev/ice_drift_pc_ncc/tools/s1_asf_download/geo_files/test_fs.json
+```
+
+2. Metadata gathering script
 
 Generic example:
 
@@ -19,10 +26,10 @@ Generic example:
 python asf_meta_download.py /PATH/TO/OUTPUT/DIRECTORY /PATH/TO/GEO/FILE /PLATFORM/ /DATE/ /TIME/ /MINIMUM/HOURS/APART/ /MAXIMUM/HOURS/APART/ /MODE/ /GRD_LEVEL/ /POLARIZATION/ 
 ```
 
-Let's download data over the Kara Sea for January 1st of 2020 over 12 hours from 00UTC:
+Let's download data over the Fram Strait (0, 79N) for January 1st of 2020 over 12 hours from 00UTC:
 
 ```
-python asf_meta_download.py . geo_files/kar.geojson Sentinel-1A,Sentinel-1B 20200101 000000 0 12 EW GRD_MD HH+HV  
+python asf_meta_download.py . geo_files/test_fs.json Sentinel-1A,Sentinel-1B 20200101 000000 0 12 EW GRD_MD HH+HV  
 ```
 
 The result will be stored in a local folder:
