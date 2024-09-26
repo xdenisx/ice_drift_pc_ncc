@@ -15,7 +15,7 @@ You can use QGIS, ArcMap or other software and store it in GeoJSON format.
 
 Let's create a geojson file with POINT geometry over the Fram Strait
 ```
-%run make_geo_file.py point 0,79 /home/denis/git/dev/ice_drift_pc_ncc/tools/s1_asf_download/geo_files/test_fs.json
+python make_geo_file.py point 0,79 /home/denis/git/dev/ice_drift_pc_ncc/tools/s1_asf_download/geo_files/test_fs.json
 ```
 
 2. Metadata gathering script
