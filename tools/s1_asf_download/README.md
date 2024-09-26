@@ -13,8 +13,16 @@ You can use QGIS, ArcMap or other software and store it in GeoJSON format.
 
 1. Metadata gathering script
 
+Generic example:
+
 ```
-python asf_meta_download.py /PATH/TO/GEO/FILE /PLATFORM/ /DATE/ /TIME/ /MINIMUM/HOURS/APART/ /MAXIMUM/HOURS/APART/ /MODE/ /GRD_LEVEL/ /POLARIZATION/ 
+python asf_meta_download.py /PATH/TO/OUTPUT/DIRECTORY /PATH/TO/GEO/FILE /PLATFORM/ /DATE/ /TIME/ /MINIMUM/HOURS/APART/ /MAXIMUM/HOURS/APART/ /MODE/ /GRD_LEVEL/ /POLARIZATION/ 
+```
+
+Let's download data over the Kara Sea for January 1st of 2020 over 12 hours from 00UTC:
+
+```
+python asf_meta_download.py . geo_files/kar.geojson Sentinel-1A,Sentinel-1B 20200101 000000 0 12 EW GRD_MD HH+HV  
 ```
 
 The result will be stored in a local folder:
@@ -23,8 +31,16 @@ The result will be stored in a local folder:
 
 2. Data downloading script 
 
+Generic example:
+
 ```
 python download_all.py /PATH/TO/METALINK/FILE/FROM/STEP/1 /PATH/TO/OUTPUT/FOLDER 
+```
+
+Download data from metadata we formed in Step 1:
+
+```
+python download_all.py ./metalinks/Sentinel-1A,Sentinel-1B_202001010000-202001011200.metalink /data/rrs/seaice/aux_data/s1/test
 ```
 
 The data will be downloaded in '/PATH/TO/OUTPUT/FOLDER' folder

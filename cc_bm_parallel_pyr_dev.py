@@ -631,6 +631,7 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
     ds = gdal.Open(gtiff)
 
     geotransform = ds.GetGeoTransform()
+    print(geotransform)
 
     old_cs = osr.SpatialReference()
     old_cs.ImportFromWkt(ds.GetProjection())
