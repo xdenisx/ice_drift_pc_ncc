@@ -36,7 +36,7 @@ The result will be stored in a local folder:
 
 > ./metalinks/Sentinel-1B_202102010000-202102030000.metalink
 
-2. Data downloading script 
+3. Data downloading script 
 
 Generic example:
 
@@ -44,7 +44,7 @@ Generic example:
 python download_all.py /PATH/TO/METALINK/FILE/FROM/STEP/1 /PATH/TO/OUTPUT/FOLDER 
 ```
 
-Download data from metadata we formed in Step 1:
+Download data from metadata we formed in Step 2:
 
 ```
 python download_all.py ./metalinks/Sentinel-1A,Sentinel-1B_202001010000-202001011200.metalink /data/rrs/seaice/aux_data/s1/test
