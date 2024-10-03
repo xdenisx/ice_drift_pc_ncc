@@ -346,7 +346,7 @@ if __name__ == "__main__":
     except:
         pass
     
-    polarizations = ['HH', 'VV', 'HV', 'VH', 'N']
+    polarizations = ['HH', 'VV', 'HV', 'VH', 'N', 'hh', 'hv', 'vh', 'vv']
     #polarizations = [ x.lower() for x in polarizations ]
     files_pref = 'UPS'
 
