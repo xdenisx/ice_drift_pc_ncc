@@ -80,7 +80,8 @@ class driftField:
         '''
         Get time difference form dates in string format
         '''
-        dt1, dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', self.file_path)
+        dt1 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', os.path.basename(self.path_to_tiff))
+        dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', os.path.basename(self.path_to_tiff2))
         self.dt1 = dt1
         self.dt2 = dt2
 
