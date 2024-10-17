@@ -27,7 +27,7 @@ class driftField:
 
     def __init__(self, file_path=None, path_to_tiff=None, path_to_tiff2=None,
                  land_mask_path='/home/denis/git/dev/ice_drift_pc_ncc/data/ne_50m_land.shp', step_pixels=50):
-        formats = {'mat': {}, 'nc': {}}
+        formats = {'mat': {}, 'nc': {}, 'tiff': {}, 'tif': {}}
 
         self.step_pixels = step_pixels
         self.path_to_tiff = path_to_tiff
