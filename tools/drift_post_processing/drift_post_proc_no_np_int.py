@@ -27,7 +27,7 @@ class driftField:
 
     def __init__(self, file_path=None, path_to_tiff=None, path_to_tiff2=None,
                  land_mask_path='/home/denis/git/dev/ice_drift_pc_ncc/data/ne_50m_land.shp', step_pixels=50):
-        formats = {'mat': {}, 'nc': {}, 'tiff': {}, 'tif': {}}
+        formats = {'mat': {}, 'nc': {}}
 
         self.step_pixels = step_pixels
         self.path_to_tiff = path_to_tiff
@@ -64,24 +64,23 @@ class driftField:
         root, extension = os.path.splitext(file_path)
         self.file_format = extension[1:]
 
-        #if self.file_format in formats.keys():
-        print(f'\nFile format: {self.file_format}')
-        func = getattr(self, f'reader_{self.file_format}')
-        self.dataset = func()
-        print('The data has been successefully readed.')
+        if self.file_format in formats.keys():
+            print(f'\nFile format: {self.file_format}')
+            func = getattr(self, f'reader_{self.file_format}')
+            self.dataset = func()
+            print('The data has been successefully readed.')
 
-        print(f'\nFiltering outliers...')
-        self.outliers_filtering()
-        print('Done.')
-        #else:
-        #    print(f'Sorry, format {self.file_format} is not currently supported')
+            print(f'\nFiltering outliers...')
+            self.outliers_filtering()
+            print('Done.')
+        else:
+            print(f'Sorry, format {self.file_format} is not currently supported')
 
     def get_dt_str(self):
         '''
         Get time difference form dates in string format
         '''
-        dt1 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', os.path.basename(self.path_to_tiff))[0]
-        dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', os.path.basename(self.path_to_tiff2))[0]
+        dt1, dt2 = re.findall('\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', os.path.basename(self.file_path))
         self.dt1 = dt1
         self.dt2 = dt2
 
@@ -373,7 +372,7 @@ class driftField:
         if not data is None:
             dataType = gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype)
             data[np.isnan(data)] = np.nan
-            if type(dataType) != np.int:
+            if type(dataType) != int:
                 if dataType.startswith('gdal.GDT_') == False:
                     dataType = eval('gdal.GDT_' + dataType)
 
