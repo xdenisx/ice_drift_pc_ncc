@@ -110,12 +110,30 @@ class driftField:
         Read and store GeoTIFF metadata
         '''
         setattr(self, pref, {})
+
+        import rasterio
+        import pyproj
+        pyproj.datadir.set_data_dir(pyproj.datadir.get_data_dir())
+
+
         image = gdal.Open(file_path)
         lm = LocationMapping(image.GetGeoTransform(), image.GetProjection())
         X = np.arange(image.RasterXSize)
         Y = np.arange(image.RasterYSize)
         X, Y = np.meshgrid(X, Y)
         lat, lon = lm.raster2LatLon(X.reshape((-1)), Y.reshape((-1)))
+
+        '''
+        pyproj.datadir.set_data_dir(pyproj.datadir.get_data_dir())
+        with rasterio.open(file_path) as src:
+            bounds = src.bounds
+            crs = src.crs
+        left, bottom, right, top = bounds
+        in_proj = pyproj.Proj(init="epsg:{}".format(crs.to_epsg()))
+        out_proj = pyproj.Proj(init="")
+        lon, lat = pyproj.transform(in_proj, out_proj, [left, left + 5], [top, top])
+        '''
+
         try:
             getattr(self, pref)['lats'] = lat.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
             getattr(self, pref)['lons'] = lon.reshape(image.ReadAsArray()[0].shape[0], image.ReadAsArray()[0].shape[1])
@@ -124,6 +142,7 @@ class driftField:
             getattr(self, pref)['lats'] = lat.reshape(image.ReadAsArray().shape[0], image.ReadAsArray().shape[1])
             getattr(self, pref)['lons'] = lon.reshape(image.ReadAsArray().shape[0], image.ReadAsArray().shape[1])
             img_z_shape = 0
+
         gt = image.GetGeoTransform()
         getattr(self, pref)['gt'] = gt
         getattr(self, pref)['proj'] = image.GetProjection()
@@ -391,10 +410,19 @@ class driftField:
         else:
             print('No data to export.')
 
-    def export_vector(self, data_format='geojson', out_path='.', filtered=True):
+    def export_vector(self, data_format='geojson', out_path='.', filtered=True, land_mask=False):
         '''
         Export vetors to geojson/shp format
         '''
+
+        if land_mask:
+            self.rasterize_shp(field=None, att='tiff_data', par='lons')
+            print('\nLand masking...')
+            self.tiff_data['lons'][self.data['land_mask']==255] = np.nan
+            self.tiff_data['lats'][self.data['land_mask']==255] = np.nan
+            print('Done.\n')
+        else:
+            pass
 
         ddy = self.data['dy_2d'].copy()
         ddx = self.data['dx_2d'].copy()
@@ -459,53 +487,56 @@ class driftField:
 
             for i in range(y1.shape[0]):
                 for j in range(y1.shape[1]):
-
                     if not np.isnan(ddy[i,j]) and not np.isnan(ddx[i,j]):
-                        lon0 = self.tiff_data['lons'][x0[i, j], y0[i, j]]
-                        lat0 = self.tiff_data['lats'][x0[i, j], y0[i, j]]
-                        #try:
-                        lon1 = self.tiff_data['lons'][x1[i, j], y1[i, j]]
-                        lat1 = self.tiff_data['lats'][x1[i, j], y1[i, j]]
+                        if not np.isnan(self.tiff_data['lons'][x0[i, j], y0[i, j]]):
+                            lon0 = self.tiff_data['lons'][x0[i, j], y0[i, j]]
+                            lat0 = self.tiff_data['lats'][x0[i, j], y0[i, j]]
+                            lon1 = self.tiff_data['lons'][x1[i, j], y1[i, j]]
+                            lat1 = self.tiff_data['lats'][x1[i, j], y1[i, j]]
 
-                        try:
-                            az, az2, mag = geod.inv(lon0, lat0,
-                                                    lon1, lat1)
-                            mag = float(mag)
-                            if az <= 180.0:
-                                az = az + 360.0
-                        except:
-                            mag, az = 999., 999.
+                            try:
+                                az, az2, mag = geod.inv(lon0, lat0,
+                                                        lon1, lat1)
+                                mag = float(mag)
+                                if az <= 180.0:
+                                    az = az + 360.0
+                            except:
+                                mag, az = 999., 999.
 
-                        if data_format == 'shp':
-                            w.line([[[lon1, lat1], [lon2, lat2]]])
-                            w.record(str(i),
-                                     str(lat0), str(lon0),
-                                     str(lat1), str(lon1),
-                                     str(mag), str(az))
+                            if data_format == 'shp':
+                                w.line([[[lon1, lat1], [lon2, lat2]]])
+                                w.record(str(i),
+                                         str(lat0), str(lon0),
+                                         str(lat1), str(lon1),
+                                         str(mag), str(az))
 
-                        if data_format == 'geojson':
-                            if lon0 == lon1 and lat0 == lat1:
-                                ft = geojson.Feature(geometry=geojson.Point([lon0, lat0]),
-                                                     properties={'id': str(i + j),
-                                                                 'lat1': lat0,
-                                                                 'lon1': lon0,
-                                                                 'drift_m': 0.,
-                                                                 'azimuth': None})
-                            else:
-                                ft = geojson.Feature(geometry=geojson.LineString([(lon0, lat0), (lon1, lat1)]),
-                                                     properties={'id': str(i + j),
-                                                                 'lat1': lat0,
-                                                                 'lon1': lon0,
-                                                                 'lat2': lat1,
-                                                                 'lon2': lon1,
-                                                                 'drift_m': mag,
-                                                                 'azimuth': az})
-                            features.append(ft)
+                            if data_format == 'geojson':
+                                if lon0 == lon1 and lat0 == lat1:
+                                    ft = geojson.Feature(geometry=geojson.Point([lon0, lat0]),
+                                                         properties={'id': str(i + j),
+                                                                     'lat1': lat0,
+                                                                     'lon1': lon0,
+                                                                     'drift_m': 0.,
+                                                                     'azimuth': None})
+                                else:
+                                    ft = geojson.Feature(geometry=geojson.LineString([(lon0, lat0), (lon1, lat1)]),
+                                                         properties={'id': str(i + j),
+                                                                     'lat1': lat0,
+                                                                     'lon1': lon0,
+                                                                     'lat2': lat1,
+                                                                     'lon2': lon1,
+                                                                     'drift_m': mag,
+                                                                     'azimuth': az})
+                                features.append(ft)
 
                     else:
                         pass
-                        #except:
+                        # except:
                         #    pass
+                else:
+                    pass
+
+
 
             os.makedirs(f'{out_path}', exist_ok=True)
             if data_format == 'shp':
@@ -956,7 +987,8 @@ class driftField:
         try:
             if hasattr(self, att):
                 if par in getattr(self, att):
-                    rows, cols = self.data[par].shape
+                    attrib = 'self.%s[\'%s\'].shape' % (att, par)
+                    rows, cols = eval(attrib) #self.data[par].shape
                     driver = gdal.GetDriverByName('MEM')
                     dst_ds = driver.Create(
                         '',
@@ -964,7 +996,21 @@ class driftField:
                         rows,
                         1,
                         gdal.GDT_UInt16)
-                    dst_ds.SetGeoTransform(self.data['geot'])
+
+                    if att=='tiff_data':
+                        pixel_width = self.tiff_data['gt'][1]
+                        pixel_height = self.tiff_data['gt'][-1]
+                        ll_corner_x = self.tiff_data['gt'][0] # + (min(self.data['y0'])) * pixel_width
+                        ll_corner_y = self.tiff_data['gt'][3] # + (min(self.data['x0'])) * pixel_height
+                        #shift_x = -pixel_width * 1 / 2
+                        #shift_y = -pixel_height * 1 / 2
+                        self.data['geot'] = (ll_corner_x, 1 * pixel_width, 0.,
+                                             ll_corner_y, 0., 1 * pixel_height)
+                        dst_ds.SetGeoTransform(self.data['geot'])
+                    else:
+                        dst_ds.SetGeoTransform(self.data['geot'])
+                    
+
                     dst_ds.SetProjection(self.tiff_data['proj'])
 
                     if field is None:
