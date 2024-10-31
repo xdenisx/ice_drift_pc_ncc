@@ -18,7 +18,7 @@ in_path = sys.argv[1]
 out_path = sys.argv[2]
 # date in output file path
 f_date_in_path = sys.argv[3]
-proj_epsg = 5041
+proj_epsg = 3995 #3413 #5041
 if len(sys.argv) >= 6:
     proj_epsg=int(sys.argv[5])
 
@@ -53,7 +53,7 @@ print('\nTarget polarizations: %s\n' % polarizations)
 
 # Try to make temp dir
 try:
-    os.makedirs('%s/temp' % home)
+    os.makedirs('%s/temp' % home, exist_ok=True)
 except:
     print("Failed to create temp directory!")
 

@@ -135,9 +135,9 @@ def transform_gcps(gcp_list, ct):
         # Check gdal version first
         ss = gdal.__version__
         if int(ss[0]) >= 3:
-            xy_target = ct.TransformPoint(gcp.GCPY, gcp.GCPX)
+            xy_target = ct.TransformPoint(float(gcp.GCPY), float(gcp.GCPX))
         else:
-            xy_target = ct.TransformPoint(gcp.GCPX, gcp.GCPY)
+            xy_target = ct.TransformPoint(float(gcp.GCPX), float(gcp.GCPY))
 
         new_gcp_list.append(gdal.GCP(xy_target[0], xy_target[1], 0, gcp.GCPPixel, gcp.GCPLine))  # 0 stands for point elevation
     return new_gcp_list
