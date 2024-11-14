@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Usage:
 #
@@ -235,60 +235,54 @@ class bulk_downloader:
        return False
 
     def get_new_cookie(self):
-       # Start by prompting user to input their credentials
+        # Start by prompting user to input their credentials
 
-       # Another Python2/3 workaround
-       try:
-          new_username = raw_input("Username: ")
-       except NameError:
-          new_username = input("Username: ")
-       new_password = getpass.getpass(prompt="Password (will not be displayed): ")
+        new_username = input("Username: ")
+        new_password = getpass.getpass(prompt="Password (will not be displayed): ")
 
-       # Build URS4 Cookie request
-       auth_cookie_url = self.asf_urs4['url'] + '?client_id=' + self.asf_urs4['client'] + '&redirect_uri=' + self.asf_urs4['redir'] + '&response_type=code&state='
+        # Build URS4 Cookie request
+        auth_cookie_url = self.asf_urs4['url'] + '?client_id=' + self.asf_urs4['client'] + '&redirect_uri=' + \
+                          self.asf_urs4['redir'] + '&response_type=code&state='
 
-       try:
-          #python2
-          user_pass = base64.b64encode (bytes(new_username+":"+new_password))
-       except TypeError:
-          #python3
-          user_pass = base64.b64encode (bytes(new_username+":"+new_password, "utf-8"))
-          user_pass = user_pass.decode("utf-8")
+        user_pass = base64.b64encode(bytes(new_username + ":" + new_password, "utf-8"))
+        user_pass = user_pass.decode("utf-8")
 
-       # Authenticate against URS, grab all the cookies
-       self.cookie_jar = MozillaCookieJar()
-       opener = build_opener(HTTPCookieProcessor(self.cookie_jar), HTTPHandler(), HTTPSHandler(**self.context))
-       request = Request(auth_cookie_url, headers={"Authorization": "Basic {0}".format(user_pass)})
+        # Authenticate against URS, grab all the cookies
+        self.cookie_jar = MozillaCookieJar()
+        opener = build_opener(HTTPCookieProcessor(self.cookie_jar), HTTPHandler(), HTTPSHandler(**self.context))
+        request = Request(auth_cookie_url, headers={"Authorization": "Basic {0}".format(user_pass)})
 
-       # Watch out cookie rejection!
-       try:
-          response = opener.open(request)
-       except HTTPError as e:
-          if "WWW-Authenticate" in e.headers and "Please enter your Earthdata Login credentials" in e.headers["WWW-Authenticate"]:
-             print (" > Username and Password combo was not successful. Please try again.")
-             return False
-          else:
-             # If an error happens here, the user most likely has not confirmed EULA.
-             print ("\nIMPORTANT: There was an error obtaining a download cookie!")
-             print ("Your user appears to lack permission to download data from the ASF Datapool.")
-             print ("\n\nNew users: you must first log into Vertex and accept the EULA. In addition, your Study Area must be set at Earthdata https://urs.earthdata.nasa.gov")
-             exit(-1)
-       except URLError as e:
-          print ("\nIMPORTANT: There was a problem communicating with URS, unable to obtain cookie. ")
-          print ("Try cookie generation later.")
-          exit(-1)
+        # Watch out cookie rejection!
+        try:
+            response = opener.open(request)
+        except HTTPError as e:
+            if "WWW-Authenticate" in e.headers and "Please enter your Earthdata Login credentials" in e.headers[
+                "WWW-Authenticate"]:
+                print(" > Username and Password combo was not successful. Please try again.")
+                return False
+            else:
+                # If an error happens here, the user most likely has not confirmed EULA.
+                print("\nIMPORTANT: There was an error obtaining a download cookie!")
+                print("Your user appears to lack permission to download data from the ASF Datapool.")
+                print(
+                    "\n\nNew users: you must first log into Vertex and accept the EULA. In addition, your Study Area must be set at Earthdata https://urs.earthdata.nasa.gov")
+                exit(-1)
+        except URLError as e:
+            print("\nIMPORTANT: There was a problem communicating with URS, unable to obtain cookie. ")
+            print("Try cookie generation later.")
+            exit(-1)
 
-       # Did we get a cookie?
-       if self.check_cookie_is_logged_in(self.cookie_jar):
-          #COOKIE SUCCESS!
-          self.cookie_jar.save(self.cookie_jar_path)
-          return True
+        # Did we get a cookie?
+        if self.check_cookie_is_logged_in(self.cookie_jar):
+            self.cookie_jar.save(self.cookie_jar_path)
+            return True
 
-       # if we aren't successful generating the cookie, nothing will work. Stop here!
-       print ("WARNING: Could not generate new cookie! Cannot proceed. Please try Username and Password again.")
-       print ("Response was {0}.".format(response.getcode()))
-       print ("\n\nNew users: you must first log into Vertex and accept the EULA. In addition, your Study Area must be set at Earthdata https://urs.earthdata.nasa.gov")
-       exit(-1)
+        # if we aren't successful generating the cookie, nothing will work. Stop here!
+        print("WARNING: Could not generate new cookie! Cannot proceed. Please try Username and Password again.")
+        print("Response was {response.getcode()}.")
+        print(
+            "\n\nNew users: you must first log into Vertex and accept the EULA. In addition, your Study Area must be set at Earthdata https://urs.earthdata.nasa.gov")
+        exit(-1)
 
     # make sure we're logged into URS
     def check_cookie_is_logged_in(self, cj):
