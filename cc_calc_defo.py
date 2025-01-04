@@ -20,6 +20,9 @@ class CalcDefo(object):
 		u_2d = self.Calc.u_2d
 		v_2d = self.Calc.v_2d
 
+		#r_2d = self.Calc.r_2d
+		#c_2d = self.Calc.c_2d
+
 		u_2d_int = self.Calc.u_2d
 		v_2d_int = self.Calc.v_2d
 
@@ -53,6 +56,8 @@ class CalcDefo(object):
 			ii, jj = index[0], index[1]
 			u_2d[ii, jj] = uuu_f[ch]
 			v_2d[ii, jj] = vvv_f[ch]
+			#r_2d[ii, jj] = xxx_f
+			#c_2d[ii, jj] = yyy_f
 
 		# Replace nan vectors with nearest values (within 300 pixels)
 		'''

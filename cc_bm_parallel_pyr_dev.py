@@ -609,11 +609,36 @@ def outliers_filtering(x1, y1, uu, vv, cc, radius=256, angle_difference=5, lengt
 
     return x1, y1, uu, vv, cc
 
+def export_geotiff(data=None, geot=None, wkt=None, fname='out.tiff'):
+    from osgeo import gdal, osr, gdal_array, ogr, gdalconst
+    if not data is None:
+        dataType = gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype)
+        data[np.isnan(data)] = np.nan
+        if type(dataType) != int:
+            if dataType.startswith('gdal.GDT_') == False:
+                dataType = eval('gdal.GDT_' + dataType)
+
+        cols = data.shape[1]
+        rows = data.shape[0]
+
+        driver = gdal.GetDriverByName('GTiff')
+        outRaster = driver.Create(fname, cols, rows, 1, dataType)
+        outRaster.SetGeoTransform(geot)
+        outband = outRaster.GetRasterBand(1)
+        outband.WriteArray(data)
+        outRaster.SetProjection(wkt)
+        outband.SetNoDataValue(np.nan)
+        outband.FlushCache()
+        del outband
+    else:
+        print('No data to export.')
+
 def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_format='geojson'):
     print('\nStart exporting to vector file...')
     if data_format not in ['geojson', 'shp']:
         print('Invalid format')
         return
+
     x1 = x1[~np.isnan(u)]
     y1 = y1[~np.isnan(v)]
     u = u[~np.isnan(u)]
@@ -657,6 +682,19 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
     pixelWidth = geotransform[1]
     pixelHeight = geotransform[-1]
 
+    #####################################
+    # Matrices for geo components
+    #####################################
+    # dX and dY
+    dd = ds.ReadAsArray()
+    u_2d = np.empty((len(range(dd.shape[0])),
+                     len(range(dd.shape[1]), )))
+    u_2d[:] = np.nan
+
+    v_2d = np.empty((len(range(dd.shape[0])),
+                     len(range(dd.shape[1]), )))
+    v_2d[:] = np.nan
+
     print('Pixel size (%s, %s) m' % (pixelWidth, pixelHeight))
 
     for i in range(len(x1)):
@@ -692,6 +730,12 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
             except:
                 mag, az = 999., 999.
 
+            if mag!=999.:
+                u_2d[int(y1[i]), int(x1[i])] = float(mag) / 1000. * np.sin(np.deg2rad(float(az)))
+                v_2d[int(y1[i]), int(x1[i])] = float(mag) / 1000. * np.cos(np.deg2rad(float(az)))
+            else:
+                pass
+
             if data_format == 'shp':
                 w.line(parts=[[[lon1, lat1], [lon2, lat2]]])
                 w.record(str(i), str(lat1), str(lon1), str(lat2), str(lon2), str(mag), str(az))
@@ -719,6 +763,10 @@ def export_to_vector(gtiff, x1, y1, u, v, output_path, gridded=False, data_forma
                                                            'azimuth': az})
 
                 features.append(new_line)
+
+    # Export geotiffs
+    export_geotiff(data=u_2d, geot=geotransform, wkt=ds.GetProjection(), fname='%s/u_geo_%s.tiff' % (os.path.dirname(output_path), os.path.basename(output_path)))
+    export_geotiff(data=v_2d, geot=geotransform, wkt=ds.GetProjection(), fname='%s/v_geo_%s.tiff' % (os.path.dirname(output_path), os.path.basename(output_path)))
 
     if data_format == 'shp':
         try:
@@ -1553,6 +1601,9 @@ if __name__ == '__main__':
     #               divergence_gtiff, NDV, u_2d.shape[0], u_2d.shape[1], GeoT, Projection, divergence_gtiff)
 
     create_geotiff('%s/defo/gtiff/%s_ICEDIV_%s' % (Conf.res_dir, files_pref, Conf.out_fname), divergence_gtiff, NDV, GeoT, Projection)
+    
+    create_geotiff('%s/defo/gtiff/%s_u2d_%s' % (Conf.res_dir, files_pref, Conf.out_fname), u_2d, NDV, GeoT, Projection)
+    create_geotiff('%s/defo/gtiff/%s_v2d_%s' % (Conf.res_dir, files_pref, Conf.out_fname), v_2d, NDV, GeoT, Projection)
 
     #####################
     # Shear

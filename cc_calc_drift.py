@@ -78,6 +78,15 @@ class CalcDrift(object):
 						len(range(grid_step, width - block_size, grid_step),)))
 		v_2d[:] = np.nan
 
+		# dX and dY GEO
+		u_2d_geo = np.empty((len(range(grid_step, height - block_size, grid_step)),
+						 len(range(grid_step, width - block_size, grid_step), )))
+		u_2d_geo[:] = np.nan
+
+		v_2d_geo = np.empty((len(range(grid_step, height - block_size, grid_step)),
+						 len(range(grid_step, width - block_size, grid_step), )))
+		v_2d_geo[:] = np.nan
+
 		# Median vectors
 		u_2d_med = np.empty((len(range(grid_step, height - block_size, grid_step)),
 						len(range(grid_step, width - block_size, grid_step),)))

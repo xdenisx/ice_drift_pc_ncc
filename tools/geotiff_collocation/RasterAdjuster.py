@@ -230,7 +230,7 @@ class RasterAdjuster():
         i = 1
         while i<= raster.RasterCount:
             data = raster.GetRasterBand(i).ReadAsArray()
-            data[data == 0] = np.nan
+            data[data == 0] = 0#np.nan
             if normalize:
                 data = (data - np.nanmin(data)) / (np.nanmax(data) - np.nanmin(data))
                 data *= 255
